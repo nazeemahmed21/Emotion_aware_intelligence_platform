@@ -1,0 +1,30 @@
+{
+  "hume_ai": {
+    "api_key": "",
+    "secret_key": "",
+    "webhook_url": "",
+    "default_granularity": "utterance",
+    "score_threshold": 0.6,
+    "top_n_emotions": 10,
+    "max_retries": 3,
+    "retry_delay_seconds": 5,
+    "job_check_interval_seconds": 30,
+    "job_timeout_seconds": 7200,
+    "negative_emotions": [
+      "Anger", "Sadness", "Fear", "Disgust", "Contempt", 
+      "Anxiety", "Distress", "Frustration", "Disappointment"
+    ],
+    "hesitancy_vocables": [
+      "Uh", "Um", "Umm", "Ah", "Hmm", "Er", "Eh"
+    ],
+    "intensity_thresholds": {
+      "low": 0.3,
+      "medium": 0.6,
+      "high": 0.8
+    }
+  },
+  "file_paths": {
+    "processed_audio_dir": "data/processed",
+    "hume_analysis_dir": "data/hume_analysis"
+  }
+}
