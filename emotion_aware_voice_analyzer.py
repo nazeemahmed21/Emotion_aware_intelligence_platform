@@ -1,40 +1,113 @@
 #!/usr/bin/env python3
 """
 Emotion-Aware Voice Intelligence Platform
+=========================================
+
 Enterprise-grade emotion analysis powered by Hume AI
 
-A professional application for analyzing emotional content in voice recordings
-with advanced AI-driven insights and comprehensive reporting capabilities.
+This application provides comprehensive emotional analysis of voice recordings using
+Hume AI's state-of-the-art emotion recognition models. It features both voice recording
+and file upload capabilities with professional visualizations and insights.
+
+Features:
+- Real-time voice recording with audio-recorder-streamlit
+- File upload support for multiple audio formats
+- Multi-model emotion analysis (Prosody, Burst, Language)
+- Professional visualizations and charts
+- Hesitancy and uncertainty pattern detection
+- Enterprise-ready error handling and logging
+- Responsive design with modern UI/UX
+
+Author: Emotion AI Team
+Version: 2.0.0
+License: MIT
 """
 
-import streamlit as st
+# Standard library imports
+import asyncio
+import json
+import logging
+import os
+import sys
+import tempfile
+import time
+from datetime import datetime
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple, Any
+
+# Third-party imports
 import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import streamlit as st
+from audio_recorder_streamlit import audio_recorder
+from dotenv import load_dotenv
 from plotly.subplots import make_subplots
-import sys
-import os
-import tempfile
-import time
-import asyncio
-from pathlib import Path
-from datetime import datetime
-import json
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('logs/emotion_analyzer.log'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
+
+# Load environment variables
+load_dotenv()
 
 # Add knowledge_base to path for Hume imports
 knowledge_base_path = Path(__file__).parent / "knowledge_base"
 sys.path.append(str(knowledge_base_path))
 
-# Load environment variables
-from dotenv import load_dotenv
-load_dotenv()
+# Ensure logs directory exists
+os.makedirs('logs', exist_ok=True)
+
+# Application Configuration
+class Config:
+    """Application configuration management"""
+    
+    # Page settings
+    PAGE_TITLE = "Emotion-Aware Voice Intelligence Platform"
+    PAGE_ICON = "🧠"
+    LAYOUT = "wide"
+    
+    # Audio settings
+    SUPPORTED_FORMATS = ['wav', 'mp3', 'm4a', 'ogg', 'flac']
+    MAX_FILE_SIZE_MB = 200
+    SAMPLE_RATE = 44100
+    PAUSE_THRESHOLD = 2.0
+    
+    # Analysis settings
+    ANALYSIS_DEPTHS = ["Standard", "Comprehensive", "Research Grade"]
+    DEFAULT_ANALYSIS_DEPTH = "Comprehensive"
+    
+    # UI settings
+    RECORDING_COLOR = "#ff6b6b"
+    NEUTRAL_COLOR = "#667eea"
+    
+    @staticmethod
+    def validate_environment() -> bool:
+        """Validate required environment variables"""
+        required_vars = ['HUME_API_KEY']
+        missing_vars = [var for var in required_vars if not os.getenv(var)]
+        
+        if missing_vars:
+            logger.error(f"Missing required environment variables: {missing_vars}")
+            return False
+        return True
+
+# Initialize configuration
+config = Config()
 
 # Page configuration
 st.set_page_config(
-    page_title="Emotion-Aware Voice Intelligence Platform",
-    page_icon="🧠",
-    layout="wide",
+    page_title=config.PAGE_TITLE,
+    page_icon=config.PAGE_ICON,
+    layout=config.LAYOUT,
     initial_sidebar_state="expanded"
 )
 
@@ -307,97 +380,160 @@ with st.sidebar:
         """)
 
 # Main content area
-def analyze_with_hume(audio_file_path):
-    """Analyze audio with Hume AI - Enterprise version"""
+def analyze_with_hume(audio_file_path: str) -> Optional[Dict[str, Any]]:
+    """
+    Analyze audio with Hume AI - Enterprise version with comprehensive error handling
+    
+    Args:
+        audio_file_path (str): Path to the audio file to analyze
+        
+    Returns:
+        Optional[Dict[str, Any]]: Analysis results or None if failed
+        
+    Raises:
+        Exception: Re-raises exceptions after logging for upstream handling
+    """
     try:
-        config = HumeConfig(
+        logger.info(f"Starting Hume AI analysis for file: {audio_file_path}")
+        
+        # Validate file exists and is readable
+        if not os.path.exists(audio_file_path):
+            raise FileNotFoundError(f"Audio file not found: {audio_file_path}")
+        
+        if os.path.getsize(audio_file_path) == 0:
+            raise ValueError("Audio file is empty")
+        
+        # Configure Hume client
+        hume_config = HumeConfig(
             api_key=api_key,
             secret_key=os.getenv('HUME_SECRET_KEY'),
             webhook_url=os.getenv('HUME_WEBHOOK_URL')
         )
-        client = HumeClient(config)
+        client = HumeClient(hume_config)
         granularity = GranularityLevel.UTTERANCE
         
-        async def run_analysis():
-            job_id = await client.submit_files([audio_file_path], granularity)
-            
-            # Progress tracking
-            progress_bar = st.progress(0)
-            status_text = st.empty()
-            
-            status_text.text(f"🚀 Job submitted: {job_id}")
-            progress_bar.progress(25)
-            
-            status_text.text("🔄 Processing with Hume AI...")
-            progress_bar.progress(50)
-            
-            success = await client.wait_for_job(job_id)
-            progress_bar.progress(75)
-            
-            if success:
-                status_text.text("📥 Downloading results...")
-                predictions = await client.get_job_predictions(job_id, format="json")
-                progress_bar.progress(100)
-                status_text.text("✅ Analysis complete!")
-                time.sleep(1)
-                progress_bar.empty()
-                status_text.empty()
-                return predictions
-            else:
-                return None
+        async def run_analysis() -> Optional[Dict[str, Any]]:
+            """Async analysis execution with progress tracking"""
+            try:
+                # Submit job
+                job_id = await client.submit_files([audio_file_path], granularity)
+                logger.info(f"Hume AI job submitted with ID: {job_id}")
+                
+                # Progress tracking UI
+                progress_bar = st.progress(0)
+                status_text = st.empty()
+                
+                status_text.text(f"🚀 Job submitted: {job_id}")
+                progress_bar.progress(25)
+                
+                status_text.text("🔄 Processing with Hume AI...")
+                progress_bar.progress(50)
+                
+                # Wait for completion
+                success = await client.wait_for_job(job_id)
+                progress_bar.progress(75)
+                
+                if success:
+                    status_text.text("📥 Downloading results...")
+                    predictions = await client.get_job_predictions(job_id, format="json")
+                    progress_bar.progress(100)
+                    status_text.text("✅ Analysis complete!")
+                    
+                    # Clean up UI elements
+                    time.sleep(1)
+                    progress_bar.empty()
+                    status_text.empty()
+                    
+                    logger.info("Hume AI analysis completed successfully")
+                    return predictions
+                else:
+                    logger.error(f"Hume AI job {job_id} failed")
+                    return None
+                    
+            except Exception as e:
+                logger.error(f"Error in async analysis: {str(e)}")
+                raise
         
         return asyncio.run(run_analysis())
         
     except Exception as e:
-        st.error(f"❌ Analysis error: {e}")
+        error_msg = f"Hume AI analysis failed: {str(e)}"
+        logger.error(error_msg)
+        st.error(f"❌ {error_msg}")
         return None
 
-def extract_emotions(predictions):
-    """Extract emotions from Hume predictions - Enhanced version"""
+def extract_emotions(predictions: Optional[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    Extract emotions from Hume predictions with comprehensive error handling
+    
+    Args:
+        predictions: Raw predictions from Hume AI API
+        
+    Returns:
+        List[Dict[str, Any]]: List of emotion dictionaries with name, score, model, and timestamp
+    """
+    if not predictions:
+        logger.warning("No predictions provided to extract_emotions")
+        return []
+    
     all_emotions = []
     
     try:
-        if isinstance(predictions, list):
-            predictions_list = predictions
-        else:
-            st.error("❌ Unexpected prediction format")
-            return []
+        logger.info("Starting emotion extraction from Hume predictions")
         
-        for file_prediction in predictions_list:
+        # Normalize predictions to list format
+        predictions_list = predictions if isinstance(predictions, list) else [predictions]
+        
+        for file_idx, file_prediction in enumerate(predictions_list):
+            logger.debug(f"Processing file prediction {file_idx + 1}/{len(predictions_list)}")
+            
+            # Handle different prediction structures
             if "results" in file_prediction:
                 file_predictions = file_prediction["results"].get("predictions", [])
             else:
                 file_predictions = [file_prediction]
             
-            for pred in file_predictions:
+            for pred_idx, pred in enumerate(file_predictions):
                 models = pred.get("models", {})
+                logger.debug(f"Found models: {list(models.keys())}")
                 
+                # Process each model (prosody, burst, language)
                 for model_name in ["prosody", "burst", "language"]:
                     if model_name not in models:
+                        logger.debug(f"Model {model_name} not found in predictions")
                         continue
                     
                     model_data = models[model_name]
                     grouped_predictions = model_data.get("grouped_predictions", [])
                     
-                    for group in grouped_predictions:
+                    for group_idx, group in enumerate(grouped_predictions):
                         predictions_inner = group.get("predictions", [])
                         
-                        for prediction in predictions_inner:
-                            if "emotions" in prediction:
-                                emotions = prediction["emotions"]
+                        for inner_pred in predictions_inner:
+                            if "emotions" not in inner_pred:
+                                continue
                                 
-                                for emotion in emotions:
-                                    all_emotions.append({
-                                        'name': emotion.get('name', ''),
-                                        'score': emotion.get('score', 0.0),
-                                        'model': model_name,
-                                        'timestamp': prediction.get('time', {})
-                                    })
+                            emotions = inner_pred["emotions"]
+                            
+                            for emotion in emotions:
+                                emotion_data = {
+                                    'name': emotion.get('name', 'unknown'),
+                                    'score': float(emotion.get('score', 0.0)),
+                                    'model': model_name,
+                                    'timestamp': inner_pred.get('time', {}),
+                                    'file_index': file_idx,
+                                    'prediction_index': pred_idx,
+                                    'group_index': group_idx
+                                }
+                                all_emotions.append(emotion_data)
         
+        logger.info(f"Successfully extracted {len(all_emotions)} emotions from predictions")
         return all_emotions
         
     except Exception as e:
-        st.error(f"❌ Error extracting emotions: {e}")
+        error_msg = f"Error extracting emotions: {str(e)}"
+        logger.error(error_msg)
+        st.error(f"❌ {error_msg}")
         return []
 
 def create_emotion_visualizations(emotions, emotion_stats):
