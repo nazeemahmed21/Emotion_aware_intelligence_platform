@@ -181,6 +181,55 @@ st.markdown("""
         border-top: 1px solid #e1e8ed;
         margin-top: 3rem;
     }
+    
+    /* Voice Recorder Styling */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 2rem;
+        background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%);
+        border-radius: 15px;
+        padding: 0.5rem;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        background: transparent;
+        border-radius: 10px;
+        padding: 0.75rem 1.5rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .stTabs [aria-selected="true"] {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white !important;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
+    
+    /* Audio recorder container */
+    .stAudio {
+        background: white;
+        border-radius: 15px;
+        padding: 1rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        border: 1px solid #e1e8ed;
+        margin: 1rem 0;
+    }
+    
+    /* Recording instructions */
+    .recording-instructions {
+        background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin: 1rem 0;
+        border-left: 4px solid #667eea;
+    }
+    
+    /* Success message styling */
+    .element-container .stSuccess {
+        background: linear-gradient(135deg, #e8f5e8 0%, #f0fff0 100%);
+        border: 1px solid #4caf50;
+        border-radius: 10px;
+        padding: 1rem;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -626,15 +675,98 @@ def display_professional_results(emotions):
                     </div>
                     """, unsafe_allow_html=True)
 
-# Main upload and analysis section
+# Main audio input section
 st.markdown("## 🎤 Audio Analysis")
 
-# Upload area
-uploaded_file = st.file_uploader(
-    "Upload your audio file for emotional analysis",
-    type=['wav', 'mp3', 'm4a', 'ogg', 'flac'],
-    help="Supported formats: WAV, MP3, M4A, OGG, FLAC. Best results with clear speech audio."
-)
+# Create tabs for different input methods
+tab1, tab2 = st.tabs(["🎙️ Record Voice", "📁 Upload File"])
+
+with tab1:
+    st.markdown("### 🎙️ Record Your Voice")
+    
+    # Recording instructions
+    st.markdown("""
+    <div class="recording-instructions">
+        <h4>📋 Recording Tips for Best Results:</h4>
+        <ul>
+            <li><strong>🔇 Quiet Environment:</strong> Find a quiet space with minimal background noise</li>
+            <li><strong>🎤 Clear Speech:</strong> Speak clearly and naturally, as you would in conversation</li>
+            <li><strong>⏱️ Duration:</strong> Record for 10-30 seconds for optimal emotion detection</li>
+            <li><strong>😊 Be Expressive:</strong> Let your natural emotions come through in your voice</li>
+            <li><strong>📱 Device:</strong> Use a good quality microphone if available</li>
+        </ul>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Import audio recorder
+    from audio_recorder_streamlit import audio_recorder
+    
+    # Voice recorder with custom styling
+    audio_bytes = audio_recorder(
+        text="Click to record",
+        recording_color="#ff6b6b",
+        neutral_color="#667eea",
+        icon_name="microphone",
+        icon_size="2x",
+        pause_threshold=2.0,
+        sample_rate=44100
+    )
+    
+    # Handle recorded audio
+    if audio_bytes:
+        st.success("✅ Recording captured successfully!")
+        
+        # Display audio player
+        st.audio(audio_bytes, format='audio/wav')
+        
+        # Analysis button for recorded audio
+        if st.button("🚀 Analyze Recorded Voice", type="primary", use_container_width=True):
+            with st.spinner(""):
+                try:
+                    # Create temporary file from recorded audio
+                    with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as tmp_file:
+                        tmp_file.write(audio_bytes)
+                        tmp_file.flush()
+                        tmp_path = tmp_file.name
+                    
+                    time.sleep(0.1)  # Windows file handling
+                    
+                    # Analyze with Hume
+                    predictions = analyze_with_hume(tmp_path)
+                    
+                    # Clean up temp file
+                    try:
+                        os.unlink(tmp_path)
+                    except (PermissionError, FileNotFoundError):
+                        pass
+                    
+                    if predictions:
+                        # Extract and display emotions
+                        emotions = extract_emotions(predictions)
+                        display_professional_results(emotions)
+                        
+                        # Raw data section
+                        if show_raw_data:
+                            with st.expander("🔍 Raw Hume AI Response Data"):
+                                st.json(predictions)
+                    else:
+                        st.error("❌ Analysis failed. Please try again or contact support.")
+                
+                except Exception as e:
+                    st.error(f"❌ Error processing recorded audio: {e}")
+                    with st.expander("🔧 Technical Details"):
+                        import traceback
+                        st.code(traceback.format_exc())
+
+with tab2:
+    st.markdown("### Upload Audio File")
+    
+    # Upload area
+    uploaded_file = st.file_uploader(
+        "Upload your audio file for emotional analysis",
+        type=['wav', 'mp3', 'm4a', 'ogg', 'flac'],
+        help="Supported formats: WAV, MP3, M4A, OGG, FLAC. Best results with clear speech audio."
+    )
 
 if uploaded_file is not None:
     file_size_mb = uploaded_file.size / (1024 * 1024)
