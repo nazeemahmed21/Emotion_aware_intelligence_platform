@@ -1298,6 +1298,109 @@ with tab3:
                             if voice_transcription:
                                 st.success("📝 **Transcription**: ✅ Completed")
                                 st.info(f"**Confidence:** {transcription_confidence:.2f}")
+                        
+                        # Intelligent Coaching Feedback
+                        if voice_transcription and voice_emotions:
+                            st.markdown("---")
+                            st.markdown("### 🎯 **Intelligent Coaching Feedback**")
+                            
+                            if st.button("🧠 Get AI Coaching Report", type="primary", use_container_width=True):
+                                with st.spinner("🤖 AI is analyzing your answer and providing personalized coaching..."):
+                                    try:
+                                        # Import coaching agent
+                                        from src.coaching import CoachingAgent, CoachingContext
+                                        
+                                        # Create coaching context
+                                        current_question = st.session_state.get('current_question', {})
+                                        question_text = current_question.get('question', 'Interview question')
+                                        question_category = current_question.get('category', 'Behavioral')
+                                        
+                                        # Calculate answer duration (estimate from audio length)
+                                        answer_duration = len(voice_transcription.split()) / 150.0  # Rough estimate: 150 words per minute
+                                        
+                                        context = CoachingContext(
+                                            question_text=question_text,
+                                            question_category=question_category,
+                                            user_answer=voice_transcription,
+                                            voice_emotions=voice_emotions,
+                                            transcription_confidence=transcription_confidence,
+                                            answer_duration=answer_duration
+                                        )
+                                        
+                                        # Get coaching feedback
+                                        coaching_agent = CoachingAgent()
+                                        feedback = coaching_agent.analyze_answer(context)
+                                        
+                                        # Store feedback in session state
+                                        st.session_state.coaching_feedback = feedback
+                                        
+                                        st.success("🎉 AI Coaching Report Generated!")
+                                        st.rerun()
+                                        
+                                    except Exception as e:
+                                        st.error(f"❌ Coaching analysis failed: {e}")
+                                        with st.expander("🔧 Technical Details"):
+                                            import traceback
+                                            st.code(traceback.format_exc())
+                        
+                        # Display coaching feedback if available
+                        if 'coaching_feedback' in st.session_state:
+                            feedback = st.session_state.coaching_feedback
+                            
+                            st.markdown("---")
+                            st.markdown("### 🎯 **Your AI Coaching Report**")
+                            
+                            # Overall score
+                            col1, col2, col3, col4 = st.columns(4)
+                            with col1:
+                                st.metric("🎯 Overall Score", f"{feedback.overall_score}/10")
+                            with col2:
+                                st.metric("📝 Content", f"{feedback.content_score}/10")
+                            with col3:
+                                st.metric("😊 Emotions", f"{feedback.emotion_score}/10")
+                            with col4:
+                                st.metric("🎤 Delivery", f"{feedback.delivery_score}/10")
+                            
+                            # Detailed feedback
+                            col1, col2 = st.columns(2)
+                            
+                            with col1:
+                                st.markdown("#### 🌟 **Strengths**")
+                                for strength in feedback.strengths:
+                                    st.success(f"✅ {strength}")
+                                
+                                st.markdown("#### 🎯 **Areas for Improvement**")
+                                for area in feedback.areas_for_improvement:
+                                    st.warning(f"⚠️ {area}")
+                            
+                            with col2:
+                                st.markdown("#### 💡 **Specific Suggestions**")
+                                for suggestion in feedback.specific_suggestions:
+                                    st.info(f"💡 {suggestion}")
+                                
+                                if feedback.star_method_feedback:
+                                    st.markdown("#### ⭐ **STAR Method Feedback**")
+                                    st.info(feedback.star_method_feedback)
+                            
+                            # Emotion coaching
+                            if feedback.emotion_coaching:
+                                st.markdown("#### 😊 **Emotion Coaching**")
+                                st.info(feedback.emotion_coaching)
+                            
+                            # Next steps
+                            st.markdown("#### 🚀 **Next Steps**")
+                            for step in feedback.next_steps:
+                                st.info(f"🎯 {step}")
+                            
+                            # Confidence boost
+                            st.markdown("#### 💪 **Confidence Boost**")
+                            st.success(feedback.confidence_boost)
+                            
+                            # Reset button
+                            if st.button("🔄 Reset Coaching Session", type="secondary"):
+                                if 'coaching_feedback' in st.session_state:
+                                    del st.session_state.coaching_feedback
+                                st.rerun()
                                 
                                 # Show transcribed text in an expander
                                 with st.expander("📝 View Transcribed Text"):

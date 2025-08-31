@@ -137,6 +137,32 @@ class LoggingConfig:
         )
 
 @dataclass
+class LLMConfig:
+    """LLM configuration for coaching and analysis"""
+    provider: str  # 'ollama', 'openai', 'anthropic'
+    model_name: str
+    base_url: Optional[str]
+    api_key: Optional[str]
+    temperature: float
+    max_tokens: int
+    timeout_seconds: int
+    max_retries: int
+    
+    @classmethod
+    def from_env(cls) -> 'LLMConfig':
+        """Create LLMConfig from environment variables"""
+        return cls(
+            provider=os.getenv('LLM_PROVIDER', 'ollama'),
+            model_name=os.getenv('LLM_MODEL_NAME', 'llama2'),
+            base_url=os.getenv('LLM_BASE_URL', 'http://localhost:11434'),
+            api_key=os.getenv('LLM_API_KEY'),
+            temperature=float(os.getenv('LLM_TEMPERATURE', '0.7')),
+            max_tokens=int(os.getenv('LLM_MAX_TOKENS', '2000')),
+            timeout_seconds=int(os.getenv('LLM_TIMEOUT_SECONDS', '60')),
+            max_retries=int(os.getenv('LLM_MAX_RETRIES', '3'))
+        )
+
+@dataclass
 class WhisperConfig:
     """Whisper transcription configuration"""
     model_size: str
@@ -172,6 +198,7 @@ class ApplicationConfig:
             self.analysis = AnalysisConfig.from_env()
             self.logging = LoggingConfig.from_env()
             self.whisper = WhisperConfig.from_env()
+            self.llm = LLMConfig.from_env()
             
             # Ensure required directories exist
             self._create_directories()
@@ -262,6 +289,18 @@ try:
         "logprob_threshold": config.whisper.logprob_threshold,
         "no_speech_threshold": config.whisper.no_speech_threshold
     }
+    
+    # Create LLM_CONFIG for backward compatibility
+    LLM_CONFIG = {
+        "provider": config.llm.provider,
+        "model_name": config.llm.model_name,
+        "base_url": config.llm.base_url,
+        "api_key": config.llm.api_key,
+        "temperature": config.llm.temperature,
+        "max_tokens": config.llm.max_tokens,
+        "timeout_seconds": config.llm.timeout_seconds,
+        "max_retries": config.llm.max_retries
+    }
 except Exception as e:
     logger.error(f"Failed to initialize application configuration: {e}")
     # Create a minimal config for error handling
@@ -275,6 +314,18 @@ except Exception as e:
         "compression_ratio_threshold": 2.4,
         "logprob_threshold": -1.0,
         "no_speech_threshold": 0.6
+    }
+    
+    # Create minimal LLM_CONFIG for backward compatibility
+    LLM_CONFIG = {
+        "provider": "ollama",
+        "model_name": "llama2",
+        "base_url": "http://localhost:11434",
+        "api_key": None,
+        "temperature": 0.7,
+        "max_tokens": 2000,
+        "timeout_seconds": 60,
+        "max_retries": 3
     }
 
 def get_config() -> ApplicationConfig:
