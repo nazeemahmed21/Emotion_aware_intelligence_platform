@@ -153,7 +153,7 @@ class LLMConfig:
         """Create LLMConfig from environment variables"""
         return cls(
             provider=os.getenv('LLM_PROVIDER', 'ollama'),
-            model_name=os.getenv('LLM_MODEL_NAME', 'llama2'),
+            model_name=os.getenv('LLM_MODEL_NAME', 'mistral'),
             base_url=os.getenv('LLM_BASE_URL', 'http://localhost:11434'),
             api_key=os.getenv('LLM_API_KEY'),
             temperature=float(os.getenv('LLM_TEMPERATURE', '0.7')),
@@ -319,7 +319,7 @@ except Exception as e:
     # Create minimal LLM_CONFIG for backward compatibility
     LLM_CONFIG = {
         "provider": "ollama",
-        "model_name": "llama2",
+        "model_name": "mistral",
         "base_url": "http://localhost:11434",
         "api_key": None,
         "temperature": 0.7,

@@ -16,6 +16,7 @@ from dataclasses import dataclass
 import json
 
 from config import LLM_CONFIG
+from ..llm.llm_client import LLMClient, LLMResponse
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +53,14 @@ class CoachingAgent:
     def __init__(self):
         """Initialize the coaching agent"""
         self.llm_config = LLM_CONFIG
+        self.llm_client = LLMClient(LLM_CONFIG)
         logger.info(f"Coaching Agent initialized with {self.llm_config['provider']}")
+        
+        # Test LLM connection
+        if not self.llm_client.test_connection():
+            logger.warning(f"LLM connection test failed for {self.llm_config['provider']}")
+        else:
+            logger.info("LLM connection test successful")
     
     def analyze_answer(self, context: CoachingContext) -> CoachingFeedback:
         """
@@ -153,6 +161,8 @@ class CoachingAgent:
             'primary_emotion': 'neutral',
             'confidence_level': 'medium',
             'emotional_stability': 'medium',
+            'top_positive_emotions': [],
+            'top_negative_emotions': [],
             'recommendations': []
         }
         
@@ -161,7 +171,23 @@ class CoachingAgent:
                 analysis['score'] = 5.0  # Neutral score if no emotions detected
                 return analysis
             
-            # Find top emotions
+            # Categorize emotions as positive or negative
+            positive_emotions = ['joy', 'excitement', 'confidence', 'determination', 'enthusiasm', 'optimism', 'calm', 'focused']
+            negative_emotions = ['fear', 'anxiety', 'nervousness', 'uncertainty', 'stress', 'frustration', 'doubt', 'tension']
+            
+            # Separate positive and negative emotions
+            positive_list = [e for e in context.voice_emotions if e.get('emotion', '').lower() in positive_emotions]
+            negative_list = [e for e in context.voice_emotions if e.get('emotion', '').lower() in negative_emotions]
+            
+            # Get top 2 positive emotions
+            top_positive = sorted(positive_list, key=lambda x: x.get('score', 0), reverse=True)[:2]
+            analysis['top_positive_emotions'] = top_positive
+            
+            # Get top 2 negative emotions (if they exist)
+            top_negative = sorted(negative_list, key=lambda x: x.get('score', 0), reverse=True)[:2]
+            analysis['top_negative_emotions'] = top_negative
+            
+            # Find overall top emotions for scoring
             top_emotions = sorted(
                 context.voice_emotions, 
                 key=lambda x: x.get('score', 0), 
@@ -275,22 +301,20 @@ class CoachingAgent:
             delivery_analysis['score'] * 0.3
         )
         
-        # Generate feedback
-        feedback = CoachingFeedback(
-            overall_score=round(overall_score, 1),
-            content_score=round(content_analysis['score'], 1),
-            emotion_score=round(emotion_analysis['score'], 1),
-            delivery_score=round(delivery_analysis['score'], 1),
-            
-            strengths=content_analysis['strengths'] + emotion_analysis['recommendations'][:1],
-            areas_for_improvement=content_analysis['weaknesses'] + delivery_analysis['recommendations'],
-            specific_suggestions=self._generate_specific_suggestions(context, content_analysis),
-            star_method_feedback=self._generate_star_feedback(context, content_analysis),
-            emotion_coaching=self._generate_emotion_coaching(emotion_analysis),
-            
-            next_steps=self._generate_next_steps(overall_score),
-            confidence_boost=self._generate_confidence_boost(overall_score)
-        )
+        # Try to generate AI-powered feedback first
+        ai_feedback = self._generate_ai_coaching_feedback(context, content_analysis, emotion_analysis, delivery_analysis)
+        
+        if ai_feedback and ai_feedback.success:
+            # Parse AI feedback and integrate with rule-based analysis
+            feedback = self._integrate_ai_feedback(
+                context, content_analysis, emotion_analysis, delivery_analysis, 
+                ai_feedback.content, overall_score
+            )
+        else:
+            # Fallback to rule-based feedback
+            feedback = self._generate_rule_based_feedback(
+                context, content_analysis, emotion_analysis, delivery_analysis, overall_score
+            )
         
         return feedback
     
@@ -357,6 +381,209 @@ class CoachingAgent:
             return "👍 Great work! You're on the right track. With a bit more practice, you'll be unstoppable!"
         else:
             return "💪 Every expert was once a beginner. You're building valuable skills that will serve you well!"
+    
+    def _generate_ai_coaching_feedback(
+        self, 
+        context: CoachingContext,
+        content_analysis: Dict[str, Any],
+        emotion_analysis: Dict[str, Any],
+        delivery_analysis: Dict[str, Any]
+    ) -> Optional[LLMResponse]:
+        """Generate AI-powered coaching feedback using LLM"""
+        try:
+            # Create a comprehensive prompt for the LLM
+            prompt = self._create_coaching_prompt(context, content_analysis, emotion_analysis, delivery_analysis)
+            
+            # Generate feedback using LLM
+            response = self.llm_client.generate_coaching_feedback(prompt)
+            
+            if response.success:
+                logger.info("AI coaching feedback generated successfully")
+                return response
+            else:
+                logger.warning(f"AI coaching feedback generation failed: {response.error_message}")
+                return None
+                
+        except Exception as e:
+            logger.error(f"Error generating AI coaching feedback: {e}")
+            return None
+    
+    def _create_coaching_prompt(
+        self, 
+        context: CoachingContext,
+        content_analysis: Dict[str, Any],
+        emotion_analysis: Dict[str, Any],
+        delivery_analysis: Dict[str, Any]
+    ) -> str:
+        """Create a comprehensive prompt for the LLM"""
+        
+        prompt = f"""
+You are an expert interview coach specializing in technical interviews. Analyze the following interview response and provide comprehensive, professional coaching feedback.
+
+INTERVIEW QUESTION:
+{context.question_text}
+Category: {context.question_category}
+
+USER'S ANSWER:
+{context.user_answer}
+
+ANALYSIS RESULTS:
+Content Score: {content_analysis['score']}/10
+- Strengths: {', '.join(content_analysis['strengths'])}
+- Areas for Improvement: {', '.join(content_analysis['weaknesses'])}
+
+Emotion Analysis: {emotion_analysis['score']}/10
+- Top Positive Emotions: {', '.join([f"{e.get('emotion', 'Unknown')} ({e.get('score', 0):.2f})" for e in emotion_analysis['top_positive_emotions']])}
+- Top Negative Emotions: {', '.join([f"{e.get('emotion', 'Unknown')} ({e.get('score', 0):.2f})" for e in emotion_analysis['top_negative_emotions']]) if emotion_analysis['top_negative_emotions'] else 'None detected'}
+- Confidence Level: {emotion_analysis['confidence_level']}
+- Emotional Stability: {emotion_analysis['emotional_stability']}
+
+Delivery Score: {delivery_analysis['score']}/10
+- Pacing: {delivery_analysis['pacing']}
+- Clarity: {delivery_analysis['clarity']}
+- Engagement: {delivery_analysis['engagement']}
+
+Please provide professional coaching feedback in the following structure:
+
+EXECUTIVE SUMMARY (2-3 sentences)
+- Overall performance assessment
+- Key areas of strength and concern
+
+STRENGTHS ANALYSIS
+- Highlight 2-3 specific positive aspects
+- Connect strengths to interview success factors
+
+IMPROVEMENT PRIORITIES
+- Focus on the 2-3 most impactful areas
+- Provide specific, actionable recommendations
+
+EMOTIONAL INTELLIGENCE INSIGHTS
+- Analyze the top positive emotions and how to leverage them
+- Address any negative emotions with specific coping strategies
+- Provide confidence-building techniques
+
+TECHNICAL DELIVERY FEEDBACK
+- STAR method guidance if applicable
+- Communication and presentation tips
+- Pacing and clarity recommendations
+
+DEVELOPMENT ROADMAP
+- Immediate next steps (next 24-48 hours)
+- Short-term goals (next week)
+- Long-term development areas
+
+Format your response in a professional, executive coaching style. Be specific, actionable, and encouraging while maintaining a business-appropriate tone.
+"""
+        return prompt
+    
+    def _integrate_ai_feedback(
+        self,
+        context: CoachingContext,
+        content_analysis: Dict[str, Any],
+        emotion_analysis: Dict[str, Any],
+        delivery_analysis: Dict[str, Any],
+        ai_content: str,
+        overall_score: float
+    ) -> CoachingFeedback:
+        """Integrate AI feedback with rule-based analysis"""
+        
+        # Parse AI content to extract structured feedback
+        parsed_feedback = self._parse_ai_feedback(ai_content)
+        
+        # Combine AI insights with rule-based analysis
+        strengths = content_analysis['strengths'] + emotion_analysis['recommendations'][:1]
+        if parsed_feedback.get('strengths'):
+            strengths.extend(parsed_feedback['strengths'])
+        
+        areas_for_improvement = content_analysis['weaknesses'] + delivery_analysis['recommendations']
+        if parsed_feedback.get('areas_for_improvement'):
+            areas_for_improvement.extend(parsed_feedback['areas_for_improvement'])
+        
+        specific_suggestions = self._generate_specific_suggestions(context, content_analysis)
+        if parsed_feedback.get('specific_suggestions'):
+            specific_suggestions.extend(parsed_feedback['specific_suggestions'])
+        
+        return CoachingFeedback(
+            overall_score=round(overall_score, 1),
+            content_score=round(content_analysis['score'], 1),
+            emotion_score=round(emotion_analysis['score'], 1),
+            delivery_score=round(delivery_analysis['score'], 1),
+            
+            strengths=strengths,
+            areas_for_improvement=areas_for_improvement,
+            specific_suggestions=specific_suggestions,
+            star_method_feedback=parsed_feedback.get('star_method_feedback') or self._generate_star_feedback(context, content_analysis),
+            emotion_coaching=parsed_feedback.get('emotion_coaching') or self._generate_emotion_coaching(emotion_analysis),
+            
+            next_steps=parsed_feedback.get('next_steps') or self._generate_next_steps(overall_score),
+            confidence_boost=parsed_feedback.get('confidence_boost') or self._generate_confidence_boost(overall_score)
+        )
+    
+    def _parse_ai_feedback(self, ai_content: str) -> Dict[str, Any]:
+        """Parse AI-generated feedback into structured format"""
+        parsed = {}
+        
+        # Simple parsing - in production, you might use more sophisticated NLP
+        lines = ai_content.split('\n')
+        current_section = None
+        
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+                
+            # Detect sections
+            if 'strength' in line.lower() or 'positive' in line.lower():
+                current_section = 'strengths'
+                parsed[current_section] = []
+            elif 'improvement' in line.lower() or 'weakness' in line.lower():
+                current_section = 'areas_for_improvement'
+                parsed[current_section] = []
+            elif 'suggestion' in line.lower() or 'tip' in line.lower():
+                current_section = 'specific_suggestions'
+                parsed[current_section] = []
+            elif 'star' in line.lower():
+                parsed['star_method_feedback'] = line
+            elif 'emotion' in line.lower() or 'confidence' in line.lower():
+                parsed['emotion_coaching'] = line
+            elif 'next' in line.lower() or 'practice' in line.lower():
+                current_section = 'next_steps'
+                parsed[current_section] = []
+            elif 'confidence' in line.lower() or 'boost' in line.lower():
+                parsed['confidence_boost'] = line
+            elif current_section and line.startswith(('-', '•', '*', '1.', '2.', '3.')):
+                # Add bullet points to current section
+                if current_section not in parsed:
+                    parsed[current_section] = []
+                parsed[current_section].append(line.lstrip('-•*1234567890. '))
+        
+        return parsed
+    
+    def _generate_rule_based_feedback(
+        self,
+        context: CoachingContext,
+        content_analysis: Dict[str, Any],
+        emotion_analysis: Dict[str, Any],
+        delivery_analysis: Dict[str, Any],
+        overall_score: float
+    ) -> CoachingFeedback:
+        """Generate rule-based feedback as fallback"""
+        
+        return CoachingFeedback(
+            overall_score=round(overall_score, 1),
+            content_score=round(content_analysis['score'], 1),
+            emotion_score=round(emotion_analysis['score'], 1),
+            delivery_score=round(delivery_analysis['score'], 1),
+            
+            strengths=content_analysis['strengths'] + emotion_analysis['recommendations'][:1],
+            areas_for_improvement=content_analysis['weaknesses'] + delivery_analysis['recommendations'],
+            specific_suggestions=self._generate_specific_suggestions(context, content_analysis),
+            star_method_feedback=self._generate_star_feedback(context, content_analysis),
+            emotion_coaching=self._generate_emotion_coaching(emotion_analysis),
+            
+            next_steps=self._generate_next_steps(overall_score),
+            confidence_boost=self._generate_confidence_boost(overall_score)
+        )
     
     def _generate_fallback_feedback(self, context: CoachingContext) -> CoachingFeedback:
         """Generate fallback feedback if analysis fails"""
