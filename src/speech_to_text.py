@@ -1,7 +1,7 @@
 """
-Speech-to-text transcription using OpenAI Whisper
+Speech-to-text transcription using Faster Whisper
 """
-import whisper
+from faster_whisper import WhisperModel
 import numpy as np
 import tempfile
 import logging
@@ -13,7 +13,7 @@ from config import WHISPER_CONFIG
 logger = logging.getLogger(__name__)
 
 class WhisperTranscriber:
-    """Handles speech-to-text transcription using Whisper"""
+    """Handles speech-to-text transcription using Faster Whisper"""
     
     def __init__(self, model_size: str = WHISPER_CONFIG["model_size"]):
         self.model_size = model_size
@@ -23,11 +23,11 @@ class WhisperTranscriber:
     def _load_model(self) -> None:
         """Load Whisper model"""
         try:
-            logger.info(f"Loading Whisper model: {self.model_size}")
-            self.model = whisper.load_model(self.model_size)
-            logger.info("Whisper model loaded successfully")
+            logger.info(f"Loading Faster Whisper model: {self.model_size}")
+            self.model = WhisperModel(self.model_size, device="cpu", compute_type="int8")
+            logger.info("Faster Whisper model loaded successfully")
         except Exception as e:
-            logger.error(f"Error loading Whisper model: {e}")
+            logger.error(f"Error loading Faster Whisper model: {e}")
             raise
     
     def transcribe_audio(self, audio_input: Union[str, bytes, np.ndarray], 
@@ -108,9 +108,16 @@ class WhisperTranscriber:
                 
             elif isinstance(audio_input, str):
                 # Load from file path using librosa (more reliable than Whisper's loader)
-                import librosa
-                audio_array, sample_rate = librosa.load(audio_input, sr=16000)
-                logger.info(f"Loaded from file: {len(audio_array)} samples at {sample_rate}Hz")
+                try:
+                    import librosa
+                    audio_array, sample_rate = librosa.load(audio_input, sr=16000)
+                    logger.info(f"Loaded from file: {len(audio_array)} samples at {sample_rate}Hz")
+                except ImportError:
+                    # Fallback to direct file transcription if librosa is not available
+                    logger.info("Librosa not available, using direct file transcription")
+                    # Pass the file path directly to Faster Whisper
+                    audio_array = audio_input
+                    sample_rate = 16000
                 
             else:
                 raise ValueError(f"Unsupported audio input type: {type(audio_input)}")
@@ -134,25 +141,30 @@ class WhisperTranscriber:
             # Ensure proper format for Whisper
             audio_array = np.ascontiguousarray(audio_array.astype(np.float32))
             
-            # Use Whisper's transcribe method directly with numpy array
+            # Use Faster Whisper's transcribe method
             logger.info("Starting transcription...")
             result = self.model.transcribe(
                 audio_array,  # Pass numpy array directly
                 language=language,
                 task=WHISPER_CONFIG["task"],
                 temperature=0.0,
-                best_of=1,
-                beam_size=1,
-                word_timestamps=True
+                beam_size=1
             )
             
-            # Extract key information
+            # Faster Whisper returns a tuple: (segments_generator, info)
+            segments = list(result[0])  # Convert generator to list
+            info = result[1]  # TranscriptionInfo object
+            
+            # Extract text from segments
+            text = " ".join([seg.text for seg in segments if hasattr(seg, 'text')])
+            
+            # Extract key information from Faster Whisper result
             transcription_result = {
-                'text': result['text'].strip(),
-                'language': result.get('language', language),
-                'confidence': self._calculate_confidence(result),
-                'segments': result.get('segments', []),
-                'duration': self._get_duration(result)
+                'text': text.strip(),
+                'language': info.language or language,
+                'confidence': self._calculate_confidence(segments),
+                'segments': [{'start': seg.start, 'end': seg.end, 'text': seg.text} for seg in segments if hasattr(seg, 'start')],
+                'duration': info.duration
             }
             
             logger.info(f"Transcription completed: '{transcription_result['text'][:50]}...'")
@@ -169,28 +181,26 @@ class WhisperTranscriber:
                 'error': str(e)
             }
     
-    def _calculate_confidence(self, result: Dict) -> float:
+    def _calculate_confidence(self, segments) -> float:
         """
         Calculate average confidence from segments
         
         Args:
-            result: Whisper transcription result
+            segments: List of Faster Whisper segments
             
         Returns:
             Average confidence score
         """
         try:
-            segments = result.get('segments', [])
             if not segments:
                 return 0.8  # Default confidence if no segments
             
-            # Average the confidence scores from segments
+            # Faster Whisper provides avg_logprob for each segment
             confidences = []
             for segment in segments:
-                # Whisper doesn't always provide confidence, estimate from other metrics
-                if 'avg_logprob' in segment:
+                if hasattr(segment, 'avg_logprob') and segment.avg_logprob is not None:
                     # Convert log probability to confidence (rough approximation)
-                    confidence = min(1.0, max(0.0, np.exp(segment['avg_logprob'])))
+                    confidence = min(1.0, max(0.0, np.exp(segment.avg_logprob)))
                     confidences.append(confidence)
             
             if confidences:
@@ -202,23 +212,7 @@ class WhisperTranscriber:
             logger.warning(f"Error calculating confidence: {e}")
             return 0.8
     
-    def _get_duration(self, result: Dict) -> float:
-        """
-        Get audio duration from transcription result
-        
-        Args:
-            result: Whisper transcription result
-            
-        Returns:
-            Duration in seconds
-        """
-        try:
-            segments = result.get('segments', [])
-            if segments:
-                return segments[-1].get('end', 0.0)
-            return 0.0
-        except:
-            return 0.0
+
     
     def transcribe_with_timestamps(self, audio_input: Union[str, bytes, np.ndarray]) -> Dict:
         """
@@ -238,14 +232,14 @@ class WhisperTranscriber:
         # Extract word-level timestamps if available
         words_with_timestamps = []
         for segment in result.get('segments', []):
-            if 'words' in segment:
-                for word_info in segment['words']:
-                    words_with_timestamps.append({
-                        'word': word_info.get('word', '').strip(),
-                        'start': word_info.get('start', 0.0),
-                        'end': word_info.get('end', 0.0),
-                        'confidence': word_info.get('probability', 0.8)
-                    })
+            # Faster Whisper doesn't provide word-level timestamps by default
+            # We can only provide segment-level timestamps
+            words_with_timestamps.append({
+                'segment': segment.get('text', '').strip(),
+                'start': segment.get('start', 0.0),
+                'end': segment.get('end', 0.0),
+                'confidence': 0.8  # Default confidence
+            })
         
         result['words'] = words_with_timestamps
         return result
@@ -288,7 +282,7 @@ def transcribe_audio_file(file_path: str, model_size: str = "base") -> str:
     
     Args:
         file_path: Path to audio file
-        model_size: Whisper model size
+        model_size: Faster Whisper model size
         
     Returns:
         Transcribed text
@@ -305,7 +299,7 @@ def get_transcriber(model_size: str = WHISPER_CONFIG["model_size"]) -> WhisperTr
     Get global transcriber instance (singleton pattern)
     
     Args:
-        model_size: Whisper model size
+        model_size: Faster Whisper model size
         
     Returns:
         WhisperTranscriber instance

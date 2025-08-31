@@ -1,0 +1,249 @@
+{
+    "STAR_Questions": [
+      {
+        "question": "Tell me about a time when you had to clean a very messy dataset.",
+        "answer": "Situation: At Milano Optics, I received raw sales data with missing values and duplicate entries. Task: I had to prepare it for a sales performance report. Action: I used Python (pandas) to handle missing values, remove duplicates, and standardized date formats. Result: The cleaned dataset improved reporting accuracy by 25% and reduced errors in quarterly sales insights."
+      },
+      {
+        "question": "Describe a situation where you used data to influence a business decision.",
+        "answer": "Situation: At Auroratech, our client wanted to know which audit features were most useful. Task: I analyzed usage logs to find frequently used features. Action: I visualized patterns in PowerBI and presented them to stakeholders. Result: The client prioritized those features, saving 15% of development costs."
+      },
+      {
+        "question": "Give an example of when you worked with an incomplete dataset.",
+        "answer": "Situation: At Axiom Telecom, we had incomplete chatbot usage data due to API limitations. Task: I needed to analyze engagement. Action: I applied statistical imputation for missing values and focused on trend analysis instead of raw counts. Result: The insights helped improve chatbot responses and boosted engagement by 10%."
+      },
+      {
+        "question": "Tell me about a time you had to communicate complex findings to non-technical stakeholders.",
+        "answer": "Situation: During a hackathon at Hyke AI, I analyzed prototype results. Task: The business team didn’t have technical expertise. Action: I created simple dashboards with visual storytelling. Result: The stakeholders clearly understood the insights, leading us to win the hackathon."
+      },
+      {
+        "question": "Describe a time when you worked under tight deadlines with data.",
+        "answer": "Situation: At Milano Optics, I was asked to deliver a weekly sales insights report in under 24 hours. Task: I needed to automate repetitive parts. Action: I used Python scripts to preprocess and visualize data quickly. Result: I delivered the report on time, and management adopted automation for weekly tasks."
+      },
+      {
+        "question": "Give an example of a time when your data analysis revealed something unexpected.",
+        "answer": "Situation: While analyzing competitor performance data, I noticed a sudden spike in sales for a rival. Task: My role was to identify the reason. Action: I dug deeper and found it was linked to seasonal promotions. Result: The company adjusted marketing campaigns accordingly, boosting sales by 12%."
+      },
+      {
+        "question": "Tell me about a project where you collaborated with multiple departments.",
+        "answer": "Situation: At Auroratech, we built auditing software that required inputs from both compliance and engineering. Task: I acted as a bridge between the two. Action: I translated business needs into technical requirements and verified results. Result: The final product met compliance standards and was delivered on schedule."
+      },
+      {
+        "question": "Describe a time when you had to validate the accuracy of data.",
+        "answer": "Situation: At Axiom Telecom, we had discrepancies between website traffic logs and sales numbers. Task: Validate data sources. Action: I cross-checked SQL queries, logs, and external API data. Result: Found a logging bug that inflated numbers, saving the company from making faulty business decisions."
+      },
+      {
+        "question": "Give me an example of a time you automated a repetitive data task.",
+        "answer": "Situation: I noticed our sales reports at Milano Optics were generated manually every week. Task: Automate reporting. Action: I built a Python script that fetched, cleaned, and visualized the data. Result: Reduced report preparation time from 4 hours to 15 minutes."
+      },
+      {
+        "question": "Tell me about a situation where your analysis was challenged.",
+        "answer": "Situation: I presented customer churn insights that were questioned by management. Task: Defend methodology. Action: I explained my approach, demonstrated the SQL queries, and showed sensitivity analysis. Result: Management accepted the findings and used them to improve retention strategies."
+      },
+      {
+        "question": "Describe a time you improved a process with data.",
+        "answer": "Situation: At Auroratech, the client’s workflow audits were slow. Task: Optimize. Action: I applied process mining on log data to identify bottlenecks. Result: Suggested automation in key areas, reducing workflow time by 30%."
+      },
+      {
+        "question": "Give an example of when you had to merge multiple datasets.",
+        "answer": "Situation: At Milano Optics, sales and customer data were in different systems. Task: Merge into one report. Action: I wrote SQL joins and pandas merges to unify the data. Result: The report gave deeper insights on customer behavior and sales patterns."
+      },
+      {
+        "question": "Tell me about a time when you handled conflicting stakeholder requirements.",
+        "answer": "Situation: At Axiom, marketing wanted flashy dashboards, while finance wanted raw tables. Task: Balance needs. Action: I built a dual dashboard: one interactive visualization and one detailed exportable report. Result: Both teams were satisfied, and collaboration improved."
+      },
+      {
+        "question": "Describe a time you identified a key business risk using data.",
+        "answer": "Situation: While working on MarketIQ, I noticed customer drop-offs at checkout. Task: Identify risk. Action: I traced it back to poor mobile optimization. Result: Client fixed UI and reduced drop-offs by 18%."
+      },
+      {
+        "question": "Tell me about a project where you used predictive analysis.",
+        "answer": "Situation: At Milano Optics, I analyzed seasonal demand. Task: Forecast future sales. Action: I built a regression model in Python using scikit-learn. Result: Helped the company stock inventory smarter and reduce overstock by 20%."
+      },
+      {
+        "question": "Give an example of how you handled unstructured data.",
+        "answer": "Situation: At Auroratech, we had text-based audit notes. Task: Extract insights. Action: I used NLP (Python, NLTK) to categorize notes and detect patterns. Result: Insights improved compliance tracking efficiency."
+      },
+      {
+        "question": "Tell me about a time you created a dashboard that drove impact.",
+        "answer": "Situation: At Milano Optics, management needed quick KPIs. Task: Build dashboard. Action: I used PowerBI with drill-down features. Result: Reduced decision-making time and improved KPI tracking accuracy."
+      },
+      {
+        "question": "Describe a time when you had to learn a new tool quickly.",
+        "answer": "Situation: At Axiom, I was tasked with implementing a chatbot using Heroku and Facebook API. Task: Learn quickly. Action: I studied documentation, built prototypes, and tested iteratively. Result: Delivered a working chatbot in under 2 weeks."
+      },
+      {
+        "question": "Tell me about a project where you ensured data security.",
+        "answer": "Situation: At Auroratech, client data needed secure handling. Task: Ensure compliance. Action: I used Azure Key Vault for storing credentials and encrypted sensitive data. Result: Passed compliance checks without issues."
+      },
+      {
+        "question": "Describe a time you used data storytelling effectively.",
+        "answer": "Situation: At Hyke AI hackathon, I had to pitch our prototype with insights. Task: Storytelling. Action: I combined charts, narratives, and visuals. Result: Judges were impressed, and we won the hackathon."
+      }
+    ],
+    "Behavioral_Questions": [
+      {
+        "question": "How do you handle tight deadlines?",
+        "answer": "I prioritize tasks, automate wherever possible, and communicate clearly with stakeholders about realistic timelines."
+      },
+      {
+        "question": "How do you deal with conflicting feedback?",
+        "answer": "I listen to both sides, clarify objectives, and suggest a middle ground that satisfies core requirements."
+      },
+      {
+        "question": "What motivates you as a data analyst?",
+        "answer": "Turning raw data into actionable insights that directly impact business decisions motivates me the most."
+      },
+      {
+        "question": "How do you handle mistakes in your work?",
+        "answer": "I acknowledge mistakes, fix them quickly, and update my process to prevent recurrence."
+      },
+      {
+        "question": "How do you stay updated with data analytics tools?",
+        "answer": "I follow tech blogs, take online courses, and experiment with new tools in personal projects."
+      },
+      {
+        "question": "How do you manage multiple projects?",
+        "answer": "I prioritize based on deadlines and impact, and use tools like Trello or Notion to track progress."
+      },
+      {
+        "question": "How do you work in a team environment?",
+        "answer": "I value clear communication, document my work, and make sure everyone has access to the same insights."
+      },
+      {
+        "question": "How do you handle ambiguity in data?",
+        "answer": "I clarify objectives, document assumptions, and validate with stakeholders before proceeding."
+      },
+      {
+        "question": "What do you do if stakeholders reject your findings?",
+        "answer": "I explain methodology, provide alternative views, and focus on aligning insights with business priorities."
+      },
+      {
+        "question": "How do you balance technical and business needs?",
+        "answer": "I focus on actionable insights instead of purely technical outputs, bridging the gap with storytelling."
+      },
+      {
+        "question": "What’s your approach to learning new tools quickly?",
+        "answer": "I focus on project-based learning, applying the tool in a real-world scenario to accelerate adoption."
+      },
+      {
+        "question": "How do you ensure accuracy in your analysis?",
+        "answer": "I validate datasets, cross-check results, and use version control for my code."
+      },
+      {
+        "question": "How do you explain technical terms to non-technical stakeholders?",
+        "answer": "I use analogies, simple visuals, and avoid jargon while keeping accuracy intact."
+      },
+      {
+        "question": "How do you prioritize stakeholder requirements?",
+        "answer": "I assess urgency, impact, and feasibility, and negotiate trade-offs transparently."
+      },
+      {
+        "question": "What do you do when you don’t know the answer to a problem?",
+        "answer": "I research, ask peers, and experiment with small tests before providing a solution."
+      },
+      {
+        "question": "How do you deal with repetitive tasks?",
+        "answer": "I automate where possible using Python or SQL scripts to save time."
+      },
+      {
+        "question": "What do you value more: accuracy or speed?",
+        "answer": "Both are important, but I prioritize accuracy since wrong insights can mislead business decisions."
+      },
+      {
+        "question": "How do you handle criticism?",
+        "answer": "I treat it as constructive feedback and use it to improve my work."
+      },
+      {
+        "question": "How do you stay organized as an analyst?",
+        "answer": "I use structured pipelines, document steps, and maintain a clean codebase."
+      },
+      {
+        "question": "How do you manage stress at work?",
+        "answer": "I break tasks into smaller chunks, focus on progress, and maintain balance with exercise and rest."
+      }
+    ],
+    "Technical_Questions": [
+      {
+        "question": "What is the difference between inner join, left join, and right join?",
+        "answer": "Inner join returns matching records, left join returns all records from the left table with matches, right join does the same for the right table."
+      },
+      {
+        "question": "Explain normalization in databases.",
+        "answer": "Normalization is the process of organizing data to reduce redundancy and improve consistency, typically through normal forms (1NF, 2NF, 3NF)."
+      },
+      {
+        "question": "How would you handle missing data?",
+        "answer": "Options include removing rows, imputing with mean/median, forward-fill, or using predictive models depending on context."
+      },
+      {
+        "question": "What is the difference between supervised and unsupervised learning?",
+        "answer": "Supervised learning uses labeled data to predict outcomes; unsupervised finds hidden patterns without labels."
+      },
+      {
+        "question": "Explain the difference between OLAP and OLTP systems.",
+        "answer": "OLAP is for analytical queries and reporting, OLTP is for transactional processing."
+      },
+      {
+        "question": "What are indexes in databases?",
+        "answer": "Indexes speed up query performance by creating quick lookup structures but may slow down inserts/updates."
+      },
+      {
+        "question": "How would you detect outliers?",
+        "answer": "Methods include z-scores, IQR, boxplots, or machine learning models like isolation forest."
+      },
+      {
+        "question": "What’s the difference between variance and standard deviation?",
+        "answer": "Variance measures spread in squared units, while standard deviation is the square root of variance in original units."
+      },
+      {
+        "question": "What are some common KPIs you would track in sales data?",
+        "answer": "Revenue growth, conversion rate, average order value, churn rate, and customer acquisition cost."
+      },
+      {
+        "question": "What is the difference between a clustered and non-clustered index?",
+        "answer": "Clustered index sorts and stores data rows physically, non-clustered stores a reference pointer."
+      },
+      {
+        "question": "How would you optimize a slow SQL query?",
+        "answer": "Use indexing, avoid SELECT *, rewrite joins, check execution plan, and reduce nested subqueries."
+      },
+      {
+        "question": "What are the different types of data distributions?",
+        "answer": "Normal, uniform, skewed, exponential, and binomial distributions."
+      },
+      {
+        "question": "What’s the difference between correlation and causation?",
+        "answer": "Correlation shows a statistical relationship, causation proves one variable directly impacts another."
+      },
+      {
+        "question": "How would you validate a predictive model?",
+        "answer": "Use train-test split, cross-validation, and performance metrics like accuracy, precision, recall, F1 score."
+      },
+      {
+        "question": "What is ETL?",
+        "answer": "Extract, Transform, Load – the process of moving and processing data into a target system."
+      },
+      {
+        "question": "What is the difference between structured and unstructured data?",
+        "answer": "Structured data fits into rows and columns, unstructured includes text, images, audio, and video."
+      },
+      {
+        "question": "How would you measure customer churn?",
+        "answer": "Calculate percentage of customers lost over a given period and analyze patterns leading to churn."
+      },
+      {
+        "question": "What are primary keys and foreign keys?",
+        "answer": "Primary key uniquely identifies a record, foreign key establishes a relationship between two tables."
+      },
+      {
+        "question": "What visualization would you use for categorical vs numerical data?",
+        "answer": "Bar charts, box plots, or violin plots depending on distribution and comparison needs."
+      },
+      {
+        "question": "What is the difference between Python’s list and tuple?",
+        "answer": "Lists are mutable, tuples are immutable."
+      }
+    ]
+  }
+  

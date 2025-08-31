@@ -1,4 +1,4 @@
-#!C:\Users\nazee\OneDrive\Nazeem\Portfolio\Emotion-Aware Voicebot\.venv\Scripts\python.exe
+#!C:\Users\nazee\OneDrive\Nazeem\Portfolio\Hume_analysis_coaching_report\Emotion_aware_intelligence_platform\.venv\Scripts\python.exe
 
 import sys
 import json

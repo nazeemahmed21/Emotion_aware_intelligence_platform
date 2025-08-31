@@ -815,7 +815,7 @@ def display_professional_results(emotions):
 st.markdown("## 🎤 Audio Analysis")
 
 # Create tabs for different input methods
-tab1, tab2 = st.tabs(["🎙️ Record Voice", "📁 Upload File"])
+tab1, tab2, tab3 = st.tabs(["🎙️ Record Voice", "📁 Upload File", "🎯 Interview Practice"])
 
 with tab1:
     st.markdown("### 🎙️ Record Your Voice")
@@ -968,6 +968,421 @@ else:
         </p>
     </div>
     """, unsafe_allow_html=True)
+
+# Interview Practice Tab
+with tab3:
+    st.markdown("## 🎯 Interview Practice & Coaching")
+    st.markdown("Practice interview questions with AI-powered coaching based on your emotional responses")
+    
+    # Initialize question manager in session state
+    if 'question_manager' not in st.session_state:
+        try:
+            from src.rag.question_manager import QuestionManager
+            st.session_state.question_manager = QuestionManager()
+            st.success("✅ Interview question system loaded successfully!")
+        except Exception as e:
+            st.error(f"❌ Failed to load interview questions: {e}")
+            st.session_state.question_manager = None
+    
+    if st.session_state.question_manager:
+        # Role selection
+        col1, col2 = st.columns([2, 1])
+        
+        with col1:
+            available_roles = st.session_state.question_manager.get_available_file_types()
+            selected_role = st.selectbox(
+                "🎭 Select Your Role",
+                options=available_roles,
+                format_func=lambda x: x.replace('_', ' ').title(),
+                help="Choose the type of interview questions you want to practice"
+            )
+        
+        with col2:
+            if st.button("🔄 Reset Session", help="Start fresh with new question order"):
+                st.session_state.question_manager.reset_session()
+                st.session_state.current_question = None
+                st.session_state.user_answer = ""
+                st.rerun()
+        
+        # Select role and get questions
+        if selected_role and st.session_state.question_manager.select_file_type(selected_role):
+            # Get progress
+            progress = st.session_state.question_manager.get_progress()
+            
+            # Progress display
+            st.markdown("### 📊 Practice Progress")
+            col1, col2, col3, col4 = st.columns(4)
+            
+            with col1:
+                st.metric("Current Cycle", f"#{progress['current_cycle']}")
+            
+            with col2:
+                st.metric("Questions Asked", f"{progress['asked_questions']}/{progress['total_questions']}")
+            
+            with col3:
+                st.metric("Remaining", progress['remaining_questions'])
+            
+            with col4:
+                st.metric("Progress", f"{progress['progress_percentage']:.1f}%")
+            
+            # Progress bar
+            st.progress(progress['progress_percentage'] / 100)
+            
+            # Question display and navigation
+            st.markdown("### ❓ Current Question")
+            
+            # Get next question button
+            if st.button("🎲 Get Next Question", type="primary", use_container_width=True):
+                question = st.session_state.question_manager.get_next_question()
+                if question:
+                    st.session_state.current_question = question
+                    st.session_state.user_answer = ""
+                    st.rerun()
+                else:
+                    st.error("❌ Failed to get question. Please try again.")
+            
+            # Display current question
+            if 'current_question' in st.session_state and st.session_state.current_question:
+                question = st.session_state.current_question
+                
+                # Question card
+                st.markdown(f"""
+                <div class="metric-card">
+                    <h3 style="color: #667eea;">{question['question']}</h3>
+                    <p style="color: #666; font-size: 0.9rem;">
+                        <strong>Category:</strong> {question['category']} • 
+                        <strong>ID:</strong> {question['id']}
+                    </p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # Answer input with voice recording
+                st.markdown("### 💭 Your Answer")
+                
+                # Create tabs for text and voice input
+                answer_tab1, answer_tab2 = st.tabs(["📝 Text Answer", "🎤 Voice Answer"])
+                
+                with answer_tab1:
+                    user_answer = st.text_area(
+                        "Type your answer here...",
+                        value=st.session_state.get('user_answer', ''),
+                        height=200,
+                        placeholder="Share your thoughts, experiences, or technical knowledge...",
+                        help="Be specific and use the STAR method for behavioral questions"
+                    )
+                
+                with answer_tab2:
+                    st.markdown("#### 🎤 Record Your Voice Answer")
+                    st.markdown("""
+                    <div class="recording-instructions">
+                        <h4>📋 Voice Recording Tips:</h4>
+                        <ul>
+                            <li><strong>🔇 Quiet Environment:</strong> Find a quiet space with minimal background noise</li>
+                            <li><strong>🎤 Clear Speech:</strong> Speak naturally as you would in a real interview</li>
+                            <li><strong>⏱️ Duration:</strong> 30 seconds to 2 minutes for comprehensive answers</li>
+                            <li><strong>😊 Be Expressive:</strong> Let your natural emotions come through</li>
+                            <li><strong>💭 Think Aloud:</strong> Share your thought process and reasoning</li>
+                        </ul>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                                        # Voice recorder
+                    voice_answer = audio_recorder(
+                        text="Click to record your answer",
+                        recording_color="#ff6b6b",
+                        neutral_color="#667eea",
+                        icon_name="microphone",
+                        icon_size="2x",
+                        pause_threshold=2.0,
+                        sample_rate=44100
+                    )
+                    
+                    if voice_answer:
+                        st.success("✅ Voice answer recorded successfully!")
+                        st.audio(voice_answer, format='audio/wav')
+                        
+                        # Store voice answer in session state
+                        st.session_state.voice_answer = voice_answer
+                        
+                        # Transcription and analysis buttons
+                        col1, col2 = st.columns(2)
+                        
+                        with col1:
+                            if st.button("📝 Transcribe Voice", type="secondary", use_container_width=True):
+                                with st.spinner("Transcribing voice to text..."):
+                                    try:
+                                        # Import and use Whisper transcriber
+                                        from src.speech_to_text import WhisperTranscriber
+                                        
+                                        # Initialize transcriber
+                                        transcriber = WhisperTranscriber()
+                                        
+                                        # Transcribe the voice answer
+                                        transcription_result = transcriber.transcribe_audio(voice_answer)
+                                        
+                                        if transcription_result and 'text' in transcription_result:
+                                            # Store transcription in session state
+                                            st.session_state.voice_transcription = transcription_result['text']
+                                            st.session_state.transcription_confidence = transcription_result.get('confidence', 0.0)
+                                            
+                                            st.success("✅ Transcription completed!")
+                                            st.info(f"**Transcribed Text:** {transcription_result['text']}")
+                                            
+                                            if 'confidence' in transcription_result:
+                                                st.info(f"**Confidence:** {transcription_result['confidence']:.2f}")
+                                        else:
+                                            st.error("❌ Transcription failed. Please try again.")
+                                            
+                                    except Exception as e:
+                                        st.error(f"❌ Transcription error: {e}")
+                                        with st.expander("🔧 Technical Details"):
+                                            import traceback
+                                            st.code(traceback.format_exc())
+                        
+                        with col2:
+                            if st.button("🧠 Analyze Voice Emotions", type="secondary", use_container_width=True):
+                                with st.spinner("Analyzing voice emotions with Hume AI..."):
+                                    try:
+                                        # Create temporary file from recorded audio
+                                        with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as tmp_file:
+                                            tmp_file.write(voice_answer)
+                                            tmp_file.flush()
+                                            tmp_path = tmp_file.name
+                                        
+                                        time.sleep(0.1)  # Windows file handling
+                                        
+                                        # Analyze with Hume AI
+                                        predictions = analyze_with_hume(tmp_path)
+                                        
+                                        # Clean up temp file
+                                        try:
+                                            os.unlink(tmp_path)
+                                        except (PermissionError, FileNotFoundError):
+                                            pass
+                                        
+                                        if predictions:
+                                            # Extract and display emotions
+                                            emotions = extract_emotions(predictions)
+                                            st.session_state.voice_emotions = emotions
+                                            
+                                            # Show voice emotion summary
+                                            st.markdown("### 🎵 Voice Emotion Analysis")
+                                            
+                                            if emotions:
+                                                # Get top 5 emotions
+                                                emotion_stats = {}
+                                                for emotion in emotions:
+                                                    name = emotion['name']
+                                                    score = emotion['score']
+                                                    if name not in emotion_stats:
+                                                        emotion_stats[name] = []
+                                                    emotion_stats[name].append(score)
+                                                
+                                                # Calculate mean scores
+                                                for name, scores in emotion_stats.items():
+                                                    emotion_stats[name] = np.mean(scores)
+                                                
+                                                # Top 5 emotions
+                                                top_5 = sorted(emotion_stats.items(), key=lambda x: x[1], reverse=True)[:5]
+                                                
+                                                col1, col2 = st.columns(2)
+                                                with col1:
+                                                    st.markdown("**Top 5 Voice Emotions:**")
+                                                    for i, (emotion, score) in enumerate(top_5, 1):
+                                                        st.metric(f"#{i} {emotion}", f"{score:.3f}")
+                                                
+                                                with col2:
+                                                    # Emotion insights
+                                                    dominant_emotion = top_5[0] if top_5 else None
+                                                    if dominant_emotion:
+                                                        st.markdown("**🎯 Dominant Emotion:**")
+                                                        st.info(f"**{dominant_emotion[0]}** (Score: {dominant_emotion[1]:.3f})")
+                                                        
+                                                        # Simple coaching based on dominant emotion
+                                                        if 'confidence' in dominant_emotion[0].lower() or 'enthusiasm' in dominant_emotion[0].lower():
+                                                            st.success("🌟 **Great energy!** Your voice conveys confidence and enthusiasm.")
+                                                        elif 'nervousness' in dominant_emotion[0].lower() or 'anxiety' in dominant_emotion[0].lower():
+                                                            st.warning("😌 **Take a breath!** Try to slow down and speak more deliberately.")
+                                                        elif 'calm' in dominant_emotion[0].lower() or 'neutral' in dominant_emotion[0].lower():
+                                                            st.info("🎯 **Good composure!** Consider adding more vocal variety and energy.")
+                                                    
+                                                    st.success("✅ Voice emotion analysis complete! This will be used for personalized coaching.")
+                                            else:
+                                                st.warning("⚠️ No emotions detected in voice. Try speaking more clearly or with more expression.")
+                                        
+                                    except Exception as e:
+                                        st.error(f"❌ Voice analysis failed: {e}")
+                                        with st.expander("🔧 Technical Details"):
+                                            import traceback
+                                            st.code(traceback.format_exc())
+                        
+                        # Combined analysis button
+                        if voice_answer and st.button("🚀 Complete Voice Analysis", type="primary", use_container_width=True):
+                            st.markdown("### 🔄 Processing Complete Voice Analysis...")
+                            
+                            # Get current state
+                            voice_transcription = st.session_state.get('voice_transcription', None)
+                            voice_emotions = st.session_state.get('voice_emotions', None)
+                            
+                            # Process transcription if not already done
+                            if not voice_transcription:
+                                with st.spinner("Step 1: Transcribing voice..."):
+                                    try:
+                                        from src.speech_to_text import WhisperTranscriber
+                                        transcriber = WhisperTranscriber()
+                                        transcription_result = transcriber.transcribe_audio(voice_answer)
+                                        
+                                        if transcription_result and 'text' in transcription_result:
+                                            st.session_state.voice_transcription = transcription_result['text']
+                                            st.session_state.transcription_confidence = transcription_result.get('confidence', 0.0)
+                                            st.success("✅ Transcription completed!")
+                                        else:
+                                            st.error("❌ Transcription failed")
+                                            st.stop()
+                                    except Exception as e:
+                                        st.error(f"❌ Transcription error: {e}")
+                                        st.stop()
+                            
+                            # Process emotions if not already done
+                            if not voice_emotions:
+                                with st.spinner("Step 2: Analyzing emotions..."):
+                                    try:
+                                        with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as tmp_file:
+                                            tmp_file.write(voice_answer)
+                                            tmp_file.flush()
+                                            tmp_path = tmp_file.name
+                                        
+                                        time.sleep(0.1)
+                                        predictions = analyze_with_hume(tmp_path)
+                                        
+                                        try:
+                                            os.unlink(tmp_path)
+                                        except (PermissionError, FileNotFoundError):
+                                            pass
+                                        
+                                        if predictions:
+                                            emotions = extract_emotions(predictions)
+                                            st.session_state.voice_emotions = emotions
+                                            st.success("✅ Emotion analysis completed!")
+                                        else:
+                                            st.error("❌ Emotion analysis failed")
+                                            st.stop()
+                                    except Exception as e:
+                                        st.error(f"❌ Emotion analysis error: {e}")
+                                        st.stop()
+                            
+                            st.success("🎉 Complete voice analysis finished! Check the analysis section below.")
+                            st.rerun()
+                
+                # Process answer (either text or voice)
+                user_answer = st.session_state.get('user_answer', '')
+                voice_answer = st.session_state.get('voice_answer', None)
+                voice_emotions = st.session_state.get('voice_emotions', None)
+                voice_transcription = st.session_state.get('voice_transcription', None)
+                transcription_confidence = st.session_state.get('transcription_confidence', 0.0)
+                
+                if user_answer or voice_answer:
+                    # Answer analysis section
+                    st.markdown("### 🧠 Answer Analysis")
+                    
+                    col1, col2 = st.columns([1, 1])
+                    
+                    with col1:
+                        if user_answer:
+                            st.info("📝 **Answer Length**: " + ("Good" if len(user_answer) > 100 else "Could be more detailed"))
+                            st.info("🎯 **Specificity**: " + ("Good" if any(word in user_answer.lower() for word in ['because', 'example', 'when', 'result']) else "Could use more examples"))
+                            st.info("🔍 **STAR Method**: " + ("Good" if any(word in user_answer.lower() for word in ['situation', 'task', 'action', 'result']) else "Consider using STAR format"))
+                        
+                        if voice_answer:
+                            st.success("🎤 **Voice Recording**: ✅ Captured and analyzed")
+                            if voice_transcription:
+                                st.success("📝 **Transcription**: ✅ Completed")
+                                st.info(f"**Confidence:** {transcription_confidence:.2f}")
+                                
+                                # Show transcribed text in an expander
+                                with st.expander("📝 View Transcribed Text"):
+                                    st.markdown(f"**Transcription:** {voice_transcription}")
+                                    if transcription_confidence > 0.8:
+                                        st.success("High confidence transcription")
+                                    elif transcription_confidence > 0.6:
+                                        st.info("Good confidence transcription")
+                                    else:
+                                        st.warning("Lower confidence - consider re-recording")
+                            else:
+                                st.info("📝 **Transcription**: Ready for processing")
+                            
+                            if voice_emotions:
+                                st.success("🎵 **Emotion Analysis**: ✅ Completed")
+                            else:
+                                st.info("🎵 **Emotion Analysis**: Ready for analysis")
+                    
+                    with col2:
+                        if voice_emotions:
+                            # Show voice emotion insights
+                            st.markdown("**🎵 Voice Insights:**")
+                            dominant = voice_emotions[0] if voice_emotions else None
+                            if dominant:
+                                emotion_name = dominant['name']
+                                emotion_score = dominant['score']
+                                
+                                if emotion_score > 0.7:
+                                    st.success(f"🔥 **High {emotion_name}** - Very expressive!")
+                                elif emotion_score > 0.4:
+                                    st.info(f"🔸 **Medium {emotion_name}** - Good balance")
+                                else:
+                                    st.warning(f"🔹 **Low {emotion_name}** - Could be more expressive")
+                        
+                        # Combined analysis summary
+                        if voice_transcription and voice_emotions:
+                            st.success("🎯 **Complete Analysis**: Voice + Text + Emotions")
+                        elif voice_transcription or voice_emotions:
+                            st.info("🔄 **Partial Analysis**: Some components ready")
+                        else:
+                            st.info("💡 **Next Steps**: Process voice for comprehensive analysis")
+                    
+                    # Enhanced coaching preview
+                    st.markdown("### 🚀 AI Coaching Preview")
+                    
+                    coaching_features = []
+                    if user_answer:
+                        coaching_features.append("📝 **Text Content Analysis**")
+                    if voice_transcription:
+                        coaching_features.append("🎤 **Voice Transcription Analysis**")
+                    if voice_emotions:
+                        coaching_features.append("🎵 **Emotion Pattern Recognition**")
+                    
+                    if coaching_features:
+                        st.markdown("""
+                        <div class="metric-card" style="background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%);">
+                            <h4>🎯 Your Coaching Session Will Include:</h4>
+                            <ul>
+                        """, unsafe_allow_html=True)
+                        
+                        for feature in coaching_features:
+                            st.markdown(f"<li>{feature}</li>", unsafe_allow_html=True)
+                        
+                        st.markdown("""
+                            </ul>
+                            <p style="margin-top: 1rem; font-style: italic;">
+                                💡 <strong>Pro Tip:</strong> The more data you provide (text + voice + emotions), the better your personalized coaching will be!
+                            </p>
+                        </div>
+                        """, unsafe_allow_html=True)
+            
+            else:
+                # Welcome message for interview practice
+                st.markdown("""
+                <div class="upload-area">
+                    <h3>🎯 Ready to Practice?</h3>
+                    <p>Select your role and click "Get Next Question" to start practicing interview questions</p>
+                    <p style="color: #666; font-size: 0.9rem;">
+                        Each session provides unique questions with no repeats until all are completed
+                    </p>
+                </div>
+                """, unsafe_allow_html=True)
+    
+    else:
+        st.error("❌ Interview question system not available. Please check the logs for errors.")
 
 # Footer
 st.markdown("""

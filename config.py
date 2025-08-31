@@ -136,6 +136,30 @@ class LoggingConfig:
             backup_count=int(os.getenv('LOG_BACKUP_COUNT', '5'))
         )
 
+@dataclass
+class WhisperConfig:
+    """Whisper transcription configuration"""
+    model_size: str
+    language: str
+    task: str
+    temperature: float
+    compression_ratio_threshold: float
+    logprob_threshold: float
+    no_speech_threshold: float
+    
+    @classmethod
+    def from_env(cls) -> 'WhisperConfig':
+        """Create WhisperConfig from environment variables"""
+        return cls(
+            model_size=os.getenv('WHISPER_MODEL_SIZE', 'base'),
+            language=os.getenv('WHISPER_LANGUAGE', 'en'),
+            task=os.getenv('WHISPER_TASK', 'transcribe'),
+            temperature=float(os.getenv('WHISPER_TEMPERATURE', '0.0')),
+            compression_ratio_threshold=float(os.getenv('WHISPER_COMPRESSION_RATIO_THRESHOLD', '2.4')),
+            logprob_threshold=float(os.getenv('WHISPER_LOGPROB_THRESHOLD', '-1.0')),
+            no_speech_threshold=float(os.getenv('WHISPER_NO_SPEECH_THRESHOLD', '0.6'))
+        )
+
 class ApplicationConfig:
     """Main application configuration class"""
     
@@ -147,6 +171,7 @@ class ApplicationConfig:
             self.ui = UIConfig.from_env()
             self.analysis = AnalysisConfig.from_env()
             self.logging = LoggingConfig.from_env()
+            self.whisper = WhisperConfig.from_env()
             
             # Ensure required directories exist
             self._create_directories()
@@ -227,10 +252,30 @@ class ApplicationConfig:
 # Global configuration instance
 try:
     config = ApplicationConfig()
+    # Create WHISPER_CONFIG for backward compatibility
+    WHISPER_CONFIG = {
+        "model_size": config.whisper.model_size,
+        "language": config.whisper.language,
+        "task": config.whisper.task,
+        "temperature": config.whisper.temperature,
+        "compression_ratio_threshold": config.whisper.compression_ratio_threshold,
+        "logprob_threshold": config.whisper.logprob_threshold,
+        "no_speech_threshold": config.whisper.no_speech_threshold
+    }
 except Exception as e:
     logger.error(f"Failed to initialize application configuration: {e}")
     # Create a minimal config for error handling
     config = None
+    # Create minimal WHISPER_CONFIG for backward compatibility
+    WHISPER_CONFIG = {
+        "model_size": "base",
+        "language": "en",
+        "task": "transcribe",
+        "temperature": 0.0,
+        "compression_ratio_threshold": 2.4,
+        "logprob_threshold": -1.0,
+        "no_speech_threshold": 0.6
+    }
 
 def get_config() -> ApplicationConfig:
     """Get the global configuration instance"""
