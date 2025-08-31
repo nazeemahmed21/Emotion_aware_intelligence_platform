@@ -255,27 +255,36 @@ st.markdown("""
         margin-top: 3rem;
     }
     
-    /* Voice Recorder Styling */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 2rem;
-        background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%);
-        border-radius: 15px;
-        padding: 0.5rem;
-    }
-    
-    .stTabs [data-baseweb="tab"] {
-        background: transparent;
-        border-radius: 10px;
-        padding: 0.75rem 1.5rem;
-        font-weight: 600;
-        transition: all 0.3s ease;
-    }
-    
-    .stTabs [aria-selected="true"] {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white !important;
-        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-    }
+         /* Voice Recorder Styling */
+     .stTabs [data-baseweb="tab-list"] {
+         gap: 2rem;
+         background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%);
+         border-radius: 15px;
+         padding: 0.5rem;
+     }
+     
+     .stTabs [data-baseweb="tab"] {
+         background: transparent;
+         border-radius: 10px;
+         padding: 0.75rem 1.5rem;
+         font-weight: 600;
+         transition: all 0.3s ease;
+         color: #666 !important;
+         border: 1px solid transparent;
+     }
+     
+     .stTabs [data-baseweb="tab"]:hover {
+         background: rgba(102, 126, 234, 0.1);
+         color: #667eea !important;
+         border-color: rgba(102, 126, 234, 0.3);
+     }
+     
+     .stTabs [aria-selected="true"] {
+         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+         color: white !important;
+         box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+         border-color: #667eea;
+     }
     
     /* Audio recorder container */
     .stAudio {
@@ -823,13 +832,13 @@ with tab1:
     # Recording instructions
     st.markdown("""
     <div class="recording-instructions">
-        <h4>📋 Recording Tips for Best Results:</h4>
-        <ul>
-            <li><strong>🔇 Quiet Environment:</strong> Find a quiet space with minimal background noise</li>
-            <li><strong>🎤 Clear Speech:</strong> Speak clearly and naturally, as you would in conversation</li>
-            <li><strong>⏱️ Duration:</strong> Record for 10-30 seconds for optimal emotion detection</li>
-            <li><strong>😊 Be Expressive:</strong> Let your natural emotions come through in your voice</li>
-            <li><strong>📱 Device:</strong> Use a good quality microphone if available</li>
+        <h4 style="color: #667eea; margin-bottom: 1rem;">📋 Recording Tips for Best Results:</h4>
+        <ul style="color: #333; line-height: 1.6;">
+            <li><strong style="color: #764ba2;">🔇 Quiet Environment:</strong> Find a quiet space with minimal background noise</li>
+            <li><strong style="color: #764ba2;">🎤 Clear Speech:</strong> Speak clearly and naturally, as you would in conversation</li>
+            <li><strong style="color: #764ba2;">⏱️ Duration:</strong> Record for 10-30 seconds for optimal emotion detection</li>
+            <li><strong style="color: #764ba2;">😊 Be Expressive:</strong> Let your natural emotions come through in your voice</li>
+            <li><strong style="color: #764ba2;">📱 Device:</strong> Use a good quality microphone if available</li>
         </ul>
     </div>
     """, unsafe_allow_html=True)
@@ -958,21 +967,26 @@ if uploaded_file is not None:
                     st.code(traceback.format_exc())
 
 else:
-    # Welcome message
-    st.markdown("""
-    <div class="upload-area">
-        <h3>🎤 Ready to Analyze Emotions</h3>
-        <p>Upload an audio file to begin advanced emotional intelligence analysis</p>
-        <p style="color: #666; font-size: 0.9rem;">
-            Drag and drop your file above or click to browse
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
+         # Welcome message
+     st.markdown("""
+     <div class="upload-area">
+         <h3 style="color: #667eea; margin-bottom: 1rem;">🎤 Ready to Analyze Emotions</h3>
+         <p style="color: #333; font-size: 1.1rem; margin-bottom: 0.5rem;">Upload an audio file to begin advanced emotional intelligence analysis</p>
+         <p style="color: #666; font-size: 0.9rem; margin: 0;">
+             Drag and drop your file above or click to browse
+         </p>
+     </div>
+     """, unsafe_allow_html=True)
 
 # Interview Practice Tab
 with tab3:
-    st.markdown("## 🎯 Interview Practice & Coaching")
-    st.markdown("Practice interview questions with AI-powered coaching based on your emotional responses")
+    # Clean header with better spacing
+    st.markdown("""
+    <div style="text-align: center; margin-bottom: 2rem;">
+        <h1 style="color: #667eea; margin-bottom: 0.5rem;">🎯 Interview Practice & Coaching</h1>
+        <p style="color: #666; font-size: 1.1rem; margin: 0;">AI-powered interview preparation with personalized feedback</p>
+    </div>
+    """, unsafe_allow_html=True)
     
     # Initialize question manager in session state
     if 'question_manager' not in st.session_state:
@@ -985,54 +999,35 @@ with tab3:
             st.session_state.question_manager = None
     
     if st.session_state.question_manager:
-        # Role selection
-        col1, col2 = st.columns([2, 1])
+        # Clean role selection section
+        st.markdown("### 🎭 Role Selection")
+        
+        # Role selection in a clean card with better alignment
+        st.markdown("""
+        <div style="background: transparent; padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(102, 126, 234, 0.2); box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin: 1rem 0;">
+        """, unsafe_allow_html=True)
+        
+        col1, col2, col3 = st.columns([4, 1, 0.75])  # Made Get Question button smaller by reducing its column width
         
         with col1:
             available_roles = st.session_state.question_manager.get_available_file_types()
             selected_role = st.selectbox(
-                "🎭 Select Your Role",
+                "Choose your interview role:",
                 options=available_roles,
                 format_func=lambda x: x.replace('_', ' ').title(),
-                help="Choose the type of interview questions you want to practice"
+                help="Select the type of interview questions you want to practice"
             )
         
         with col2:
-            if st.button("🔄 Reset Session", help="Start fresh with new question order"):
+            st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)  # Increased spacer to move button down more
+            if st.button("🔄 Reset", help="Start fresh with new question order", use_container_width=True):
                 st.session_state.question_manager.reset_session()
                 st.session_state.current_question = None
                 st.session_state.user_answer = ""
                 st.rerun()
         
-        # Select role and get questions
-        if selected_role and st.session_state.question_manager.select_file_type(selected_role):
-            # Get progress
-            progress = st.session_state.question_manager.get_progress()
-            
-            # Progress display
-            st.markdown("### 📊 Practice Progress")
-            col1, col2, col3, col4 = st.columns(4)
-            
-            with col1:
-                st.metric("Current Cycle", f"#{progress['current_cycle']}")
-            
-            with col2:
-                st.metric("Questions Asked", f"{progress['asked_questions']}/{progress['total_questions']}")
-            
-            with col3:
-                st.metric("Remaining", progress['remaining_questions'])
-            
-            with col4:
-                st.metric("Progress", f"{progress['progress_percentage']:.1f}%")
-            
-            # Progress bar
-            st.progress(progress['progress_percentage'] / 100)
-            
-            # Question display and navigation
-            st.markdown("### ❓ Current Question")
-            
-            # Get next question button
-            if st.button("🎲 Get Next Question", type="primary", use_container_width=True):
+        with col3:
+            if selected_role and st.button("🎲 Get Question", type="primary", use_container_width=True):
                 question = st.session_state.question_manager.get_next_question()
                 if question:
                     st.session_state.current_question = question
@@ -1040,53 +1035,82 @@ with tab3:
                     st.rerun()
                 else:
                     st.error("❌ Failed to get question. Please try again.")
+        
+        st.markdown("</div>", unsafe_allow_html=True)
+        
+        # Select role and get questions
+        if selected_role and st.session_state.question_manager.select_file_type(selected_role):
+            # Clean progress display
+            progress = st.session_state.question_manager.get_progress()
+            
+            # Progress section with better visual hierarchy
+            st.markdown("---")
+            st.markdown("### 📊 Practice Progress")
+            
+            # Progress metrics in a clean grid
+            progress_cols = st.columns(4)
+            with progress_cols[0]:
+                st.metric("Cycle", f"#{progress['current_cycle']}")
+            with progress_cols[1]:
+                st.metric("Progress", f"{progress['asked_questions']}/{progress['total_questions']}")
+            with progress_cols[2]:
+                st.metric("Remaining", progress['remaining_questions'])
+            with progress_cols[3]:
+                st.metric("Completion", f"{progress['progress_percentage']:.1f}%")
+            
+            # Clean progress bar
+            st.progress(progress['progress_percentage'] / 100)
             
             # Display current question
             if 'current_question' in st.session_state and st.session_state.current_question:
                 question = st.session_state.current_question
                 
-                # Question card
+                # Clean question display
+                st.markdown("---")
+                st.markdown("### ❓ Current Question")
+                
+                # Question in a clean card
                 st.markdown(f"""
-                <div class="metric-card">
-                    <h3 style="color: #667eea;">{question['question']}</h3>
-                    <p style="color: #666; font-size: 0.9rem;">
-                        <strong>Category:</strong> {question['category']} • 
-                        <strong>ID:</strong> {question['id']}
-                    </p>
+                <div style="background: white; padding: 1.5rem; border-radius: 12px; border-left: 4px solid #667eea; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin: 1rem 0;">
+                    <h4 style="color: #333; margin-bottom: 1rem;">{question['question']}</h4>
+                    <div style="display: flex; gap: 1rem; color: #666; font-size: 0.9rem;">
+                        <span><strong>Category:</strong> {question['category']}</span>
+                        <span><strong>ID:</strong> {question['id']}</span>
+                    </div>
                 </div>
                 """, unsafe_allow_html=True)
                 
-                # Answer input with voice recording
+                # Answer input section
                 st.markdown("### 💭 Your Answer")
                 
-                # Create tabs for text and voice input
+                # Clean tabs for input methods
                 answer_tab1, answer_tab2 = st.tabs(["📝 Text Answer", "🎤 Voice Answer"])
                 
                 with answer_tab1:
                     user_answer = st.text_area(
                         "Type your answer here...",
                         value=st.session_state.get('user_answer', ''),
-                        height=200,
+                        height=150,
                         placeholder="Share your thoughts, experiences, or technical knowledge...",
                         help="Be specific and use the STAR method for behavioral questions"
                     )
                 
                 with answer_tab2:
+                    # Clean voice recording section
                     st.markdown("#### 🎤 Record Your Voice Answer")
-                    st.markdown("""
-                    <div class="recording-instructions">
-                        <h4>📋 Voice Recording Tips:</h4>
-                        <ul>
-                            <li><strong>🔇 Quiet Environment:</strong> Find a quiet space with minimal background noise</li>
-                            <li><strong>🎤 Clear Speech:</strong> Speak naturally as you would in a real interview</li>
-                            <li><strong>⏱️ Duration:</strong> 30 seconds to 2 minutes for comprehensive answers</li>
-                            <li><strong>😊 Be Expressive:</strong> Let your natural emotions come through</li>
-                            <li><strong>💭 Think Aloud:</strong> Share your thought process and reasoning</li>
-                        </ul>
-                    </div>
-                    """, unsafe_allow_html=True)
                     
-                                        # Voice recorder
+                    # Recording tips in a clean card
+                    with st.expander("📋 Recording Tips", expanded=False):
+                        st.markdown("""
+                        **For best results:**
+                        - 🔇 Find a quiet environment
+                        - 🎤 Speak clearly and naturally
+                        - ⏱️ Record for 30 seconds to 2 minutes
+                        - 😊 Let your emotions come through
+                        - 💭 Share your thought process
+                        """)
+                    
+                    # Voice recorder
                     voice_answer = audio_recorder(
                         text="Click to record your answer",
                         recording_color="#ff6b6b",
@@ -1104,24 +1128,20 @@ with tab3:
                         # Store voice answer in session state
                         st.session_state.voice_answer = voice_answer
                         
-                        # Transcription and analysis buttons
+                        # Clean action buttons
+                        st.markdown("#### 🔄 Process Your Recording")
+                        
                         col1, col2 = st.columns(2)
                         
                         with col1:
                             if st.button("📝 Transcribe Voice", type="secondary", use_container_width=True):
                                 with st.spinner("Transcribing voice to text..."):
                                     try:
-                                        # Import and use Whisper transcriber
                                         from src.speech_to_text import WhisperTranscriber
-                                        
-                                        # Initialize transcriber
                                         transcriber = WhisperTranscriber()
-                                        
-                                        # Transcribe the voice answer
                                         transcription_result = transcriber.transcribe_audio(voice_answer)
                                         
                                         if transcription_result and 'text' in transcription_result:
-                                            # Store transcription in session state
                                             st.session_state.voice_transcription = transcription_result['text']
                                             st.session_state.transcription_confidence = transcription_result.get('confidence', 0.0)
                                             
@@ -1140,36 +1160,31 @@ with tab3:
                                             st.code(traceback.format_exc())
                         
                         with col2:
-                            if st.button("🧠 Analyze Voice Emotions", type="secondary", use_container_width=True):
-                                with st.spinner("Analyzing voice emotions with Hume AI..."):
+                            if st.button("🧠 Analyze Emotions", type="secondary", use_container_width=True):
+                                with st.spinner("Analyzing voice emotions..."):
                                     try:
-                                        # Create temporary file from recorded audio
                                         with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as tmp_file:
                                             tmp_file.write(voice_answer)
                                             tmp_file.flush()
                                             tmp_path = tmp_file.name
                                         
-                                        time.sleep(0.1)  # Windows file handling
-                                        
-                                        # Analyze with Hume AI
+                                        time.sleep(0.1)
                                         predictions = analyze_with_hume(tmp_path)
                                         
-                                        # Clean up temp file
                                         try:
                                             os.unlink(tmp_path)
                                         except (PermissionError, FileNotFoundError):
                                             pass
                                         
                                         if predictions:
-                                            # Extract and display emotions
                                             emotions = extract_emotions(predictions)
                                             st.session_state.voice_emotions = emotions
                                             
-                                            # Show voice emotion summary
-                                            st.markdown("### 🎵 Voice Emotion Analysis")
+                                            # Clean emotion display
+                                            st.markdown("#### 🎵 Voice Emotion Analysis")
                                             
                                             if emotions:
-                                                # Get top 5 emotions
+                                                # Top 5 emotions in clean format
                                                 emotion_stats = {}
                                                 for emotion in emotions:
                                                     name = emotion['name']
@@ -1178,37 +1193,33 @@ with tab3:
                                                         emotion_stats[name] = []
                                                     emotion_stats[name].append(score)
                                                 
-                                                # Calculate mean scores
                                                 for name, scores in emotion_stats.items():
                                                     emotion_stats[name] = np.mean(scores)
                                                 
-                                                # Top 5 emotions
                                                 top_5 = sorted(emotion_stats.items(), key=lambda x: x[1], reverse=True)[:5]
                                                 
-                                                col1, col2 = st.columns(2)
-                                                with col1:
-                                                    st.markdown("**Top 5 Voice Emotions:**")
-                                                    for i, (emotion, score) in enumerate(top_5, 1):
-                                                        st.metric(f"#{i} {emotion}", f"{score:.3f}")
+                                                # Clean emotion metrics
+                                                emotion_cols = st.columns(5)
+                                                for i, (emotion, score) in enumerate(top_5):
+                                                    with emotion_cols[i]:
+                                                        st.metric(f"#{i+1}", f"{score:.3f}", emotion.title())
                                                 
-                                                with col2:
-                                                    # Emotion insights
-                                                    dominant_emotion = top_5[0] if top_5 else None
-                                                    if dominant_emotion:
-                                                        st.markdown("**🎯 Dominant Emotion:**")
-                                                        st.info(f"**{dominant_emotion[0]}** (Score: {dominant_emotion[1]:.3f})")
-                                                        
-                                                        # Simple coaching based on dominant emotion
-                                                        if 'confidence' in dominant_emotion[0].lower() or 'enthusiasm' in dominant_emotion[0].lower():
-                                                            st.success("🌟 **Great energy!** Your voice conveys confidence and enthusiasm.")
-                                                        elif 'nervousness' in dominant_emotion[0].lower() or 'anxiety' in dominant_emotion[0].lower():
-                                                            st.warning("😌 **Take a breath!** Try to slow down and speak more deliberately.")
-                                                        elif 'calm' in dominant_emotion[0].lower() or 'neutral' in dominant_emotion[0].lower():
-                                                            st.info("🎯 **Good composure!** Consider adding more vocal variety and energy.")
+                                                # Dominant emotion insight
+                                                dominant_emotion = top_5[0] if top_5 else None
+                                                if dominant_emotion:
+                                                    st.info(f"🎯 **Dominant Emotion:** {dominant_emotion[0].title()} (Score: {dominant_emotion[1]:.3f})")
                                                     
-                                                    st.success("✅ Voice emotion analysis complete! This will be used for personalized coaching.")
+                                                    # Simple coaching based on dominant emotion
+                                                    if 'confidence' in dominant_emotion[0].lower() or 'enthusiasm' in dominant_emotion[0].lower():
+                                                        st.success("🌟 Great energy! Your voice conveys confidence and enthusiasm.")
+                                                    elif 'nervousness' in dominant_emotion[0].lower() or 'anxiety' in dominant_emotion[0].lower():
+                                                        st.warning("😌 Take a breath! Try to slow down and speak more deliberately.")
+                                                    elif 'calm' in dominant_emotion[0].lower() or 'neutral' in dominant_emotion[0].lower():
+                                                        st.info("🎯 Good composure! Consider adding more vocal variety and energy.")
+                                                
+                                                st.success("✅ Voice emotion analysis complete!")
                                             else:
-                                                st.warning("⚠️ No emotions detected in voice. Try speaking more clearly or with more expression.")
+                                                st.warning("⚠️ No emotions detected. Try speaking more clearly or with more expression.")
                                         
                                     except Exception as e:
                                         st.error(f"❌ Voice analysis failed: {e}")
@@ -1217,8 +1228,8 @@ with tab3:
                                             st.code(traceback.format_exc())
                         
                         # Combined analysis button
-                        if voice_answer and st.button("🚀 Complete Voice Analysis", type="primary", use_container_width=True):
-                            st.markdown("### 🔄 Processing Complete Voice Analysis...")
+                        if voice_answer and st.button("🚀 Complete Analysis", type="primary", use_container_width=True):
+                            st.markdown("### 🔄 Processing Complete Analysis...")
                             
                             # Get current state
                             voice_transcription = st.session_state.get('voice_transcription', None)
@@ -1271,7 +1282,7 @@ with tab3:
                                         st.error(f"❌ Emotion analysis error: {e}")
                                         st.stop()
                             
-                            st.success("🎉 Complete voice analysis finished! Check the analysis section below.")
+                            st.success("🎉 Complete analysis finished!")
                             st.rerun()
                 
                 # Process answer (either text or voice)
@@ -1282,207 +1293,186 @@ with tab3:
                 transcription_confidence = st.session_state.get('transcription_confidence', 0.0)
                 
                 if user_answer or voice_answer:
-                    # Answer analysis section
+                    # Clean answer analysis section
+                    st.markdown("---")
                     st.markdown("### 🧠 Answer Analysis")
                     
-                    col1, col2 = st.columns([1, 1])
+                    # Analysis summary in clean cards
+                    analysis_cols = st.columns(2)
                     
-                    with col1:
+                    with analysis_cols[0]:
                         if user_answer:
-                            st.info("📝 **Answer Length**: " + ("Good" if len(user_answer) > 100 else "Could be more detailed"))
-                            st.info("🎯 **Specificity**: " + ("Good" if any(word in user_answer.lower() for word in ['because', 'example', 'when', 'result']) else "Could use more examples"))
-                            st.info("🔍 **STAR Method**: " + ("Good" if any(word in user_answer.lower() for word in ['situation', 'task', 'action', 'result']) else "Consider using STAR format"))
+                            st.markdown("#### 📝 Text Analysis")
+                            st.info("**Answer Length:** " + ("✅ Good" if len(user_answer) > 100 else "⚠️ Could be more detailed"))
+                            st.info("**Specificity:** " + ("✅ Good" if any(word in user_answer.lower() for word in ['because', 'example', 'when', 'result']) else "⚠️ Could use more examples"))
+                            st.info("**STAR Method:** " + ("✅ Good" if any(word in user_answer.lower() for word in ['situation', 'task', 'action', 'result']) else "⚠️ Consider using STAR format"))
                         
                         if voice_answer:
-                            st.success("🎤 **Voice Recording**: ✅ Captured and analyzed")
+                            st.markdown("#### 🎤 Voice Analysis")
+                            st.success("**Recording:** ✅ Captured and analyzed")
                             if voice_transcription:
-                                st.success("📝 **Transcription**: ✅ Completed")
+                                st.success("**Transcription:** ✅ Completed")
                                 st.info(f"**Confidence:** {transcription_confidence:.2f}")
-                        
-                        # Intelligent Coaching Feedback
-                        if voice_transcription and voice_emotions:
-                            st.markdown("---")
-                            st.markdown("### 🎯 **Intelligent Coaching Feedback**")
-                            
-                            if st.button("🧠 Get AI Coaching Report", type="primary", use_container_width=True):
-                                with st.spinner("🤖 AI is analyzing your answer and providing personalized coaching..."):
-                                    try:
-                                        # Import coaching agent
-                                        from src.coaching import CoachingAgent, CoachingContext
-                                        
-                                        # Create coaching context
-                                        current_question = st.session_state.get('current_question', {})
-                                        question_text = current_question.get('question', 'Interview question')
-                                        question_category = current_question.get('category', 'Behavioral')
-                                        
-                                        # Calculate answer duration (estimate from audio length)
-                                        answer_duration = len(voice_transcription.split()) / 150.0  # Rough estimate: 150 words per minute
-                                        
-                                        context = CoachingContext(
-                                            question_text=question_text,
-                                            question_category=question_category,
-                                            user_answer=voice_transcription,
-                                            voice_emotions=voice_emotions,
-                                            transcription_confidence=transcription_confidence,
-                                            answer_duration=answer_duration
-                                        )
-                                        
-                                        # Get coaching feedback
-                                        coaching_agent = CoachingAgent()
-                                        feedback = coaching_agent.analyze_answer(context)
-                                        
-                                        # Store feedback in session state
-                                        st.session_state.coaching_feedback = feedback
-                                        
-                                        st.success("🎉 AI Coaching Report Generated!")
-                                        st.rerun()
-                                        
-                                    except Exception as e:
-                                        st.error(f"❌ Coaching analysis failed: {e}")
-                                        with st.expander("🔧 Technical Details"):
-                                            import traceback
-                                            st.code(traceback.format_exc())
-                        
-                        # Display coaching feedback if available
-                        if 'coaching_feedback' in st.session_state:
-                            feedback = st.session_state.coaching_feedback
-                            
-                            st.markdown("---")
-                            st.markdown("### 🎯 **Your AI Coaching Report**")
-                            
-                            # Overall score
-                            col1, col2, col3, col4 = st.columns(4)
-                            with col1:
-                                st.metric("🎯 Overall Score", f"{feedback.overall_score}/10")
-                            with col2:
-                                st.metric("📝 Content", f"{feedback.content_score}/10")
-                            with col3:
-                                st.metric("😊 Emotions", f"{feedback.emotion_score}/10")
-                            with col4:
-                                st.metric("🎤 Delivery", f"{feedback.delivery_score}/10")
-                            
-                            # Detailed feedback
-                            col1, col2 = st.columns(2)
-                            
-                            with col1:
-                                st.markdown("#### 🌟 **Strengths**")
-                                for strength in feedback.strengths:
-                                    st.success(f"✅ {strength}")
-                                
-                                st.markdown("#### 🎯 **Areas for Improvement**")
-                                for area in feedback.areas_for_improvement:
-                                    st.warning(f"⚠️ {area}")
-                            
-                            with col2:
-                                st.markdown("#### 💡 **Specific Suggestions**")
-                                for suggestion in feedback.specific_suggestions:
-                                    st.info(f"💡 {suggestion}")
-                                
-                                if feedback.star_method_feedback:
-                                    st.markdown("#### ⭐ **STAR Method Feedback**")
-                                    st.info(feedback.star_method_feedback)
-                            
-                            # Emotion coaching
-                            if feedback.emotion_coaching:
-                                st.markdown("#### 😊 **Emotion Coaching**")
-                                st.info(feedback.emotion_coaching)
-                            
-                            # Next steps
-                            st.markdown("#### 🚀 **Next Steps**")
-                            for step in feedback.next_steps:
-                                st.info(f"🎯 {step}")
-                            
-                            # Confidence boost
-                            st.markdown("#### 💪 **Confidence Boost**")
-                            st.success(feedback.confidence_boost)
-                            
-                            # Reset button
-                            if st.button("🔄 Reset Coaching Session", type="secondary"):
-                                if 'coaching_feedback' in st.session_state:
-                                    del st.session_state.coaching_feedback
-                                st.rerun()
-                                
-                                # Show transcribed text in an expander
-                                with st.expander("📝 View Transcribed Text"):
-                                    st.markdown(f"**Transcription:** {voice_transcription}")
-                                    if transcription_confidence > 0.8:
-                                        st.success("High confidence transcription")
-                                    elif transcription_confidence > 0.6:
-                                        st.info("Good confidence transcription")
-                                    else:
-                                        st.warning("Lower confidence - consider re-recording")
-                            else:
-                                st.info("📝 **Transcription**: Ready for processing")
-                            
-                            if voice_emotions:
-                                st.success("🎵 **Emotion Analysis**: ✅ Completed")
-                            else:
-                                st.info("🎵 **Emotion Analysis**: Ready for analysis")
                     
-                    with col2:
+                    with analysis_cols[1]:
                         if voice_emotions:
-                            # Show voice emotion insights
-                            st.markdown("**🎵 Voice Insights:**")
+                            st.markdown("#### 🎵 Emotion Insights")
                             dominant = voice_emotions[0] if voice_emotions else None
                             if dominant:
                                 emotion_name = dominant['name']
                                 emotion_score = dominant['score']
                                 
                                 if emotion_score > 0.7:
-                                    st.success(f"🔥 **High {emotion_name}** - Very expressive!")
+                                    st.success(f"🔥 **High {emotion_name.title()}** - Very expressive!")
                                 elif emotion_score > 0.4:
-                                    st.info(f"🔸 **Medium {emotion_name}** - Good balance")
+                                    st.info(f"🔸 **Medium {emotion_name.title()}** - Good balance")
                                 else:
-                                    st.warning(f"🔹 **Low {emotion_name}** - Could be more expressive")
+                                    st.warning(f"🔹 **Low {emotion_name.title()}** - Could be more expressive")
                         
-                        # Combined analysis summary
+                        # Analysis status
                         if voice_transcription and voice_emotions:
-                            st.success("🎯 **Complete Analysis**: Voice + Text + Emotions")
+                            st.success("🎯 **Complete Analysis:** Voice + Text + Emotions")
                         elif voice_transcription or voice_emotions:
-                            st.info("🔄 **Partial Analysis**: Some components ready")
+                            st.info("🔄 **Partial Analysis:** Some components ready")
                         else:
-                            st.info("💡 **Next Steps**: Process voice for comprehensive analysis")
+                            st.info("💡 **Next Steps:** Process voice for comprehensive analysis")
                     
-                    # Enhanced coaching preview
-                    st.markdown("### 🚀 AI Coaching Preview")
-                    
-                    coaching_features = []
-                    if user_answer:
-                        coaching_features.append("📝 **Text Content Analysis**")
-                    if voice_transcription:
-                        coaching_features.append("🎤 **Voice Transcription Analysis**")
-                    if voice_emotions:
-                        coaching_features.append("🎵 **Emotion Pattern Recognition**")
-                    
-                    if coaching_features:
-                        st.markdown("""
-                        <div class="metric-card" style="background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%);">
-                            <h4>🎯 Your Coaching Session Will Include:</h4>
-                            <ul>
-                        """, unsafe_allow_html=True)
+                    # Intelligent Coaching Feedback
+                    if voice_transcription and voice_emotions:
+                        st.markdown("---")
+                        st.markdown("### 🎯 AI Coaching")
                         
-                        for feature in coaching_features:
-                            st.markdown(f"<li>{feature}</li>", unsafe_allow_html=True)
+                        if st.button("🧠 Get AI Coaching Report", type="primary", use_container_width=True):
+                            with st.spinner("🤖 AI is analyzing your answer and providing personalized coaching..."):
+                                try:
+                                    from src.coaching import CoachingAgent, CoachingContext
+                                    
+                                    current_question = st.session_state.get('current_question', {})
+                                    question_text = current_question.get('question', 'Interview question')
+                                    question_category = current_question.get('category', 'Behavioral')
+                                    
+                                    answer_duration = len(voice_transcription.split()) / 150.0
+                                    
+                                    context = CoachingContext(
+                                        question_text=question_text,
+                                        question_category=question_category,
+                                        user_answer=voice_transcription,
+                                        voice_emotions=voice_emotions,
+                                        transcription_confidence=transcription_confidence,
+                                        answer_duration=answer_duration
+                                    )
+                                    
+                                    coaching_agent = CoachingAgent()
+                                    feedback = coaching_agent.analyze_answer(context)
+                                    
+                                    st.session_state.coaching_feedback = feedback
+                                    
+                                    st.success("🎉 AI Coaching Report Generated!")
+                                    st.rerun()
+                                    
+                                except Exception as e:
+                                    st.error(f"❌ Coaching analysis failed: {e}")
+                                    with st.expander("🔧 Technical Details"):
+                                        import traceback
+                                        st.code(traceback.format_exc())
+                    
+                    # Display coaching feedback if available
+                    if 'coaching_feedback' in st.session_state:
+                        feedback = st.session_state.coaching_feedback
                         
-                        st.markdown("""
-                            </ul>
-                            <p style="margin-top: 1rem; font-style: italic;">
-                                💡 <strong>Pro Tip:</strong> The more data you provide (text + voice + emotions), the better your personalized coaching will be!
-                            </p>
-                        </div>
-                        """, unsafe_allow_html=True)
-            
-            else:
-                # Welcome message for interview practice
-                st.markdown("""
-                <div class="upload-area">
-                    <h3>🎯 Ready to Practice?</h3>
-                    <p>Select your role and click "Get Next Question" to start practicing interview questions</p>
-                    <p style="color: #666; font-size: 0.9rem;">
-                        Each session provides unique questions with no repeats until all are completed
-                    </p>
-                </div>
-                """, unsafe_allow_html=True)
+                        st.markdown("---")
+                        st.markdown("### 🎯 Your AI Coaching Report")
+                        
+                        # Overall score in clean metrics
+                        score_cols = st.columns(4)
+                        with score_cols[0]:
+                            st.metric("🎯 Overall", f"{feedback.overall_score}/10")
+                        with score_cols[1]:
+                            st.metric("📝 Content", f"{feedback.content_score}/10")
+                        with score_cols[2]:
+                            st.metric("😊 Emotions", f"{feedback.emotion_score}/10")
+                        with score_cols[3]:
+                            st.metric("🎤 Delivery", f"{feedback.delivery_score}/10")
+                        
+                        # Detailed feedback in clean columns
+                        feedback_cols = st.columns(2)
+                        
+                        with feedback_cols[0]:
+                            st.markdown("#### 🌟 Strengths")
+                            for strength in feedback.strengths:
+                                st.success(f"✅ {strength}")
+                            
+                            st.markdown("#### 🎯 Areas for Improvement")
+                            for area in feedback.areas_for_improvement:
+                                st.warning(f"⚠️ {area}")
+                        
+                        with feedback_cols[1]:
+                            st.markdown("#### 💡 Specific Suggestions")
+                            for suggestion in feedback.specific_suggestions:
+                                st.info(f"💡 {suggestion}")
+                            
+                            if feedback.star_method_feedback:
+                                st.markdown("#### ⭐ STAR Method Feedback")
+                                st.info(feedback.star_method_feedback)
+                        
+                        # Additional feedback sections
+                        if feedback.emotion_coaching:
+                            st.markdown("#### 😊 Emotion Coaching")
+                            st.info(feedback.emotion_coaching)
+                        
+                        st.markdown("#### 🚀 Next Steps")
+                        for step in feedback.next_steps:
+                            st.info(f"🎯 {step}")
+                        
+                        st.markdown("#### 💪 Confidence Boost")
+                        st.success(feedback.confidence_boost)
+                        
+                        # Reset button
+                        if st.button("🔄 Reset Coaching Session", type="secondary"):
+                            if 'coaching_feedback' in st.session_state:
+                                del st.session_state.coaching_feedback
+                            st.rerun()
+                    
+                    # Clean coaching preview
+                    if voice_transcription or voice_emotions:
+                        st.markdown("---")
+                        st.markdown("### 🚀 Coaching Preview")
+                        
+                        coaching_features = []
+                        if user_answer:
+                            coaching_features.append("📝 Text Content Analysis")
+                        if voice_transcription:
+                            coaching_features.append("🎤 Voice Transcription Analysis")
+                        if voice_emotions:
+                            coaching_features.append("🎵 Emotion Pattern Recognition")
+                        
+                        if coaching_features:
+                            st.markdown("""
+                            <div style="background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%); padding: 1.5rem; border-radius: 12px; border-left: 4px solid #667eea;">
+                                <h4 style="margin-bottom: 1rem;">🎯 Your Coaching Session Will Include:</h4>
+                                <ul style="margin: 0; padding-left: 1.5rem;">
+                            """, unsafe_allow_html=True)
+                            
+                            for feature in coaching_features:
+                                st.markdown(f"<li>{feature}</li>", unsafe_allow_html=True)
+                            
+                            st.markdown("""
+                                </ul>
+                                <p style="margin-top: 1rem; font-style: italic; color: #666;">
+                                    💡 <strong>Pro Tip:</strong> The more data you provide, the better your personalized coaching will be!
+                                </p>
+                            </div>
+                            """, unsafe_allow_html=True)
+        
+        else:
+            # Clean welcome message
+            st.markdown("""
+            <div style="text-align: center; padding: 3rem; background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%); border-radius: 15px; border: 2px dashed #667eea;">
+                <h3 style="color: #667eea; margin-bottom: 1rem;">🎯 Ready to Practice?</h3>
+                <p style="color: #666; font-size: 1.1rem; margin-bottom: 0.5rem;">Select your role and click "Get Question" to start practicing interview questions</p>
+                <p style="color: #999; font-size: 0.9rem; margin: 0;">Each session provides unique questions with no repeats until all are completed</p>
+            </div>
+            """, unsafe_allow_html=True)
     
     else:
         st.error("❌ Interview question system not available. Please check the logs for errors.")
