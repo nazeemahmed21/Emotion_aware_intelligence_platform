@@ -24,7 +24,7 @@ knowledge_base_path = Path(__file__).parent.parent / "knowledge_base"
 sys.path.append(str(knowledge_base_path))
 
 try:
-    from hume.hume_client import HumeClient, HumeConfig, GranularityLevel
+    from knowledge_base.hume.hume_client import HumeClient, HumeConfig, GranularityLevel
 except ImportError as e:
     logging.error(f"Could not import Hume client: {e}")
     logging.error("Make sure the knowledge_base/hume directory is accessible")

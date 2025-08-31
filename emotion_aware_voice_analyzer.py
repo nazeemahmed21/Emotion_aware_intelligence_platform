@@ -333,7 +333,7 @@ with st.sidebar:
     
     # Import check
     try:
-        from hume.hume_client import HumeClient, HumeConfig, GranularityLevel
+        from knowledge_base.hume.hume_client import HumeClient, HumeConfig, GranularityLevel
         st.markdown('<div class="status-success">✅ Hume Client Ready</div>', unsafe_allow_html=True)
     except Exception as e:
         st.markdown('<div class="status-error">❌ Import Error</div>', unsafe_allow_html=True)

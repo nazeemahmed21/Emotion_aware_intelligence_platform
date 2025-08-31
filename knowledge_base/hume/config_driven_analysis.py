@@ -30,7 +30,7 @@ if str(src_path) not in sys.path:
 # Import centralized selection config
 from utils.selection_config import get_selected_sales_reps, get_sales_rep_display_names
 
-from hume.hume_client import HumeClient, HumeConfig, GranularityLevel
+from hume_client import HumeClient, HumeConfig, GranularityLevel
 from hume.core.config_loader import load_config
 from hume.core.analysis_config import get_analysis_config
 from hume.core.emotion_processor import (

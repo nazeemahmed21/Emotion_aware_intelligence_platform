@@ -20,7 +20,7 @@ src_path = Path(__file__).parent.parent
 if str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
 
-from hume.hume_client import HumeConfig, HumeClient, GranularityLevel
+from hume_client import HumeConfig, HumeClient, GranularityLevel
 from hume.core.config_loader import load_config
 
 # Setup logging
