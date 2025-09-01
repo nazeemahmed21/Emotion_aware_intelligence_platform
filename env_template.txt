@@ -1,0 +1,14 @@
+# Copy this file to .env and update with your values
+
+# Ollama Configuration (FIXED for 500 errors)
+LLM_PROVIDER=ollama
+LLM_MODEL_NAME=llama2:7b
+LLM_TEMPERATURE=0.7
+LLM_MAX_TOKENS=1000
+
+# Hume AI Configuration
+HUME_API_KEY=your_hume_api_key_here
+
+# Application Settings
+DEBUG=True
+LOG_LEVEL=INFO

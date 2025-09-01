@@ -1342,9 +1342,26 @@ with tab3:
                         st.markdown("---")
                         st.markdown("### 🎯 AI Coaching")
                         
-                        if st.button("🧠 Get AI Coaching Report", type="primary", use_container_width=True):
-                            with st.spinner("🤖 AI is analyzing your answer and providing personalized coaching..."):
-                                try:
+                        # Add diagnostic button for Ollama issues
+                        col1, col2 = st.columns([3, 1])
+                        with col1:
+                            if st.button("🧠 Get AI Coaching Report", type="primary", use_container_width=True):
+                                with st.spinner("🤖 AI is analyzing your answer and providing personalized coaching..."):
+                                    # Check if Ollama is available
+                                    try:
+                                        import requests
+                                        response = requests.get("http://localhost:11434/api/tags", timeout=2)
+                                        ollama_available = response.status_code == 200
+                                    except:
+                                        ollama_available = False
+                                    
+                                    if not ollama_available:
+                                        st.warning("⚠️ Ollama (local AI) is not available. Using rule-based coaching instead.")
+                        
+                        with col2:
+                            st.info("💡 AI coaching will use your local Ollama model")
+                        
+                        try:
                                     from src.coaching import CoachingAgent, CoachingContext
                                     
                                     current_question = st.session_state.get('current_question', {})
@@ -1374,13 +1391,11 @@ with tab3:
                                     else:
                                         st.success("🎉 Coaching Report Generated (Rule-based fallback)")
                                     
-                                    st.rerun()
-                                    
-                                except Exception as e:
-                                    st.error(f"❌ Coaching analysis failed: {e}")
-                                    with st.expander("🔧 Technical Details"):
-                                        import traceback
-                                        st.code(traceback.format_exc())
+                        except Exception as e:
+                            st.error(f"❌ Coaching analysis failed: {e}")
+                            with st.expander("🔧 Technical Details"):
+                                import traceback
+                                st.code(traceback.format_exc())
                     
                     # Display coaching feedback if available
                     if 'coaching_feedback' in st.session_state:
@@ -1510,6 +1525,44 @@ with tab3:
                         # Additional professional sections
                         st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)  # Spacer before additional sections
                         
+                        # Enhanced Emotion Analysis Section - Now integrated into emotion_coaching
+                        if feedback.emotion_coaching and ("🌟" in feedback.emotion_coaching or "⚠️" in feedback.emotion_coaching or "💡" in feedback.emotion_coaching):
+                            st.markdown("""
+                            <div style="background: white; padding: 1.5rem; border-radius: 12px; border: 1px solid #dee2e6; margin-bottom: 2rem;">
+                                <h4 style="color: #fd7e14; margin-bottom: 1rem; font-size: 1.2rem;">🎭 DETAILED EMOTION ANALYSIS</h4>
+                            </div>
+                            """, unsafe_allow_html=True)
+                            
+                            # Split the emotion coaching into sections
+                            emotion_parts = feedback.emotion_coaching.split(" | ")
+                            
+                            for part in emotion_parts:
+                                if "🌟" in part:
+                                    st.markdown(f"""
+                                    <div style="background: #e8f5e8; padding: 0.75rem; border-radius: 6px; margin-bottom: 0.5rem; border-left: 3px solid #28a745;">
+                                        <p style="margin: 0; color: #155724;">{part}</p>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+                                elif "⚠️" in part:
+                                    st.markdown(f"""
+                                    <div style="background: #fff3cd; padding: 0.75rem; border-radius: 6px; margin-bottom: 0.5rem; border-left: 3px solid #ffc107;">
+                                        <p style="margin: 0; color: #856404;">{part}</p>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+                                elif "💡" in part:
+                                    st.markdown(f"""
+                                    <div style="background: #d1ecf1; padding: 0.75rem; border-radius: 6px; margin-bottom: 0.5rem; border-left: 3px solid #17a2b8;">
+                                        <p style="margin: 0; color: #0c5460;">{part}</p>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+                                else:
+                                    st.markdown(f"""
+                                    <div style="background: #f8f9fa; padding: 0.75rem; border-radius: 6px; margin-bottom: 0.5rem; border-left: 3px solid #fd7e14;">
+                                        <p style="margin: 0; color: #a0522d;">{part}</p>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+                        
+                        # Original emotion coaching (if available)
                         if feedback.emotion_coaching:
                             st.markdown("""
                             <div style="background: white; padding: 1.5rem; border-radius: 12px; border: 1px solid #dee2e6; margin-bottom: 2rem;">

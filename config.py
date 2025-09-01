@@ -153,11 +153,11 @@ class LLMConfig:
         """Create LLMConfig from environment variables"""
         return cls(
             provider=os.getenv('LLM_PROVIDER', 'ollama'),
-            model_name=os.getenv('LLM_MODEL_NAME', 'mistral'),
+            model_name=os.getenv('LLM_MODEL_NAME', 'mistral:latest'),
             base_url=os.getenv('LLM_BASE_URL', 'http://localhost:11434'),
             api_key=os.getenv('LLM_API_KEY'),
             temperature=float(os.getenv('LLM_TEMPERATURE', '0.7')),
-            max_tokens=int(os.getenv('LLM_MAX_TOKENS', '2000')),
+            max_tokens=int(os.getenv('LLM_MAX_TOKENS', '1000')),
             timeout_seconds=int(os.getenv('LLM_TIMEOUT_SECONDS', '60')),
             max_retries=int(os.getenv('LLM_MAX_RETRIES', '3'))
         )

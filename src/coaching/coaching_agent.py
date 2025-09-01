@@ -14,6 +14,7 @@ import logging
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 import json
+import requests # Added for Ollama connection test
 
 from config import LLM_CONFIG
 from ..llm.llm_client import LLMClient, LLMResponse
@@ -163,29 +164,95 @@ class CoachingAgent:
             'emotional_stability': 'medium',
             'top_positive_emotions': [],
             'top_negative_emotions': [],
-            'recommendations': []
+            'recommendations': [],
+            'emotion_specific_feedback': [],
+            'positive_emotion_highlights': [],
+            'negative_emotion_concerns': []
         }
         
         try:
             if not context.voice_emotions:
                 analysis['score'] = 5.0  # Neutral score if no emotions detected
+                analysis['emotion_specific_feedback'].append("No specific emotions detected - consider speaking with more expression and energy")
                 return analysis
             
-            # Categorize emotions as positive or negative
-            positive_emotions = ['joy', 'excitement', 'confidence', 'determination', 'enthusiasm', 'optimism', 'calm', 'focused']
-            negative_emotions = ['fear', 'anxiety', 'nervousness', 'uncertainty', 'stress', 'frustration', 'doubt', 'tension']
+            # Enhanced emotion categorization with specific feedback
+            positive_emotions = {
+                'joy': 'excellent enthusiasm and positive energy',
+                'excitement': 'great passion and engagement',
+                'confidence': 'strong self-assurance and conviction',
+                'determination': 'excellent focus and drive',
+                'enthusiasm': 'wonderful energy and interest',
+                'optimism': 'positive outlook and hopefulness',
+                'calm': 'good composure and steadiness',
+                'focused': 'excellent concentration and clarity',
+                'amusement': 'pleasant and engaging tone',
+                'contentment': 'satisfied and comfortable delivery',
+                'satisfaction': 'positive and fulfilled expression'
+            }
+            
+            negative_emotions = {
+                'fear': 'showing nervousness or anxiety',
+                'anxiety': 'displaying worry or stress',
+                'nervousness': 'appearing tense or uncertain',
+                'uncertainty': 'lacking confidence or conviction',
+                'stress': 'showing pressure or tension',
+                'frustration': 'appearing annoyed or irritated',
+                'doubt': 'lacking confidence in your response',
+                'tension': 'showing strain or pressure',
+                'annoyance': 'sounding irritated or bothered',
+                'disappointment': 'showing dissatisfaction or letdown',
+                'distress': 'appearing troubled or upset'
+            }
             
             # Separate positive and negative emotions
-            positive_list = [e for e in context.voice_emotions if e.get('emotion', '').lower() in positive_emotions]
-            negative_list = [e for e in context.voice_emotions if e.get('emotion', '').lower() in negative_emotions]
+            positive_list = []
+            negative_list = []
             
-            # Get top 2 positive emotions
-            top_positive = sorted(positive_list, key=lambda x: x.get('score', 0), reverse=True)[:2]
+            for emotion in context.voice_emotions:
+                emotion_name = emotion.get('emotion', '').lower()
+                emotion_score = emotion.get('score', 0)
+                
+                if emotion_name in positive_emotions:
+                    positive_list.append(emotion)
+                elif emotion_name in negative_emotions:
+                    negative_list.append(emotion)
+            
+            # Get top positive emotions
+            top_positive = sorted(positive_list, key=lambda x: x.get('score', 0), reverse=True)[:3]
             analysis['top_positive_emotions'] = top_positive
             
-            # Get top 2 negative emotions (if they exist)
-            top_negative = sorted(negative_list, key=lambda x: x.get('score', 0), reverse=True)[:2]
+            # Get top negative emotions
+            top_negative = sorted(negative_list, key=lambda x: x.get('score', 0), reverse=True)[:3]
             analysis['top_negative_emotions'] = top_negative
+            
+            # Generate specific feedback for positive emotions
+            for emotion in top_positive:
+                emotion_name = emotion.get('emotion', '').lower()
+                emotion_score = emotion.get('score', 0)
+                
+                if emotion_score > 0.7:
+                    analysis['positive_emotion_highlights'].append(
+                        f"🌟 Excellent {emotion_name.title()}: {positive_emotions.get(emotion_name, 'great emotion')} (Score: {emotion_score:.2f})"
+                    )
+                elif emotion_score > 0.4:
+                    analysis['positive_emotion_highlights'].append(
+                        f"👍 Good {emotion_name.title()}: {positive_emotions.get(emotion_name, 'positive emotion')} (Score: {emotion_score:.2f})"
+                    )
+            
+            # Generate specific feedback for negative emotions
+            for emotion in top_negative:
+                emotion_name = emotion.get('emotion', '').lower()
+                emotion_score = emotion.get('score', 0)
+                
+                if emotion_score > 0.6:
+                    analysis['negative_emotion_concerns'].append(
+                        f"⚠️ High {emotion_name.title()}: {negative_emotions.get(emotion_name, 'concerning emotion')} (Score: {emotion_score:.2f})"
+                    )
+                elif emotion_score > 0.3:
+                    analysis['negative_emotion_concerns'].append(
+                        f"🔸 Moderate {emotion_name.title()}: {negative_emotions.get(emotion_name, 'area for improvement')} (Score: {emotion_score:.2f})"
+                    )
             
             # Find overall top emotions for scoring
             top_emotions = sorted(
@@ -197,34 +264,90 @@ class CoachingAgent:
             primary_emotion = top_emotions[0] if top_emotions else {}
             analysis['primary_emotion'] = primary_emotion.get('emotion', 'neutral')
             
-            # Analyze confidence indicators
-            confidence_emotions = ['joy', 'excitement', 'confidence', 'determination']
-            nervous_emotions = ['fear', 'anxiety', 'nervousness', 'uncertainty']
+            # Enhanced confidence analysis
+            confidence_emotions = ['joy', 'excitement', 'confidence', 'determination', 'enthusiasm']
+            nervous_emotions = ['fear', 'anxiety', 'nervousness', 'uncertainty', 'doubt']
+            negative_emotions_list = ['frustration', 'annoyance', 'stress', 'tension']
             
-            if analysis['primary_emotion'] in confidence_emotions:
+            primary_emotion_name = analysis['primary_emotion'].lower()
+            
+            if primary_emotion_name in confidence_emotions:
                 analysis['confidence_level'] = 'high'
                 analysis['score'] = 8.0
-                analysis['recommendations'].append("Great confidence! Keep this energy")
-            elif analysis['primary_emotion'] in nervous_emotions:
+                analysis['emotion_specific_feedback'].append(
+                    f"🎯 Excellent! Your {primary_emotion_name.title()} shows strong confidence and will impress interviewers"
+                )
+            elif primary_emotion_name in nervous_emotions:
                 analysis['confidence_level'] = 'low'
                 analysis['score'] = 3.0
-                analysis['recommendations'].append("Practice breathing exercises before interviews")
-                analysis['recommendations'].append("Remember: you're prepared and capable")
+                analysis['emotion_specific_feedback'].append(
+                    f"😌 Your {primary_emotion_name.title()} suggests nervousness. Practice deep breathing and power poses before interviews"
+                )
+                analysis['emotion_specific_feedback'].append(
+                    "💪 Remember: You're prepared and capable. Confidence comes from preparation"
+                )
+            elif primary_emotion_name in negative_emotions_list:
+                analysis['confidence_level'] = 'low'
+                analysis['score'] = 4.0
+                analysis['emotion_specific_feedback'].append(
+                    f"⚠️ Your {primary_emotion_name.title()} might be perceived as negative. Focus on positive framing and enthusiasm"
+                )
             else:
                 analysis['confidence_level'] = 'medium'
                 analysis['score'] = 6.0
-                analysis['recommendations'].append("Good emotional balance, could show more enthusiasm")
+                analysis['emotion_specific_feedback'].append(
+                    f"🎯 Good emotional balance with {primary_emotion_name.title()}. Consider adding more enthusiasm and energy"
+                )
             
-            # Check emotional stability (consistency across emotions)
+            # Check emotional stability and provide specific advice
             emotion_scores = [e.get('score', 0) for e in top_emotions]
             if len(emotion_scores) > 1:
                 variance = sum((score - sum(emotion_scores)/len(emotion_scores))**2 for score in emotion_scores)
                 if variance < 0.1:
                     analysis['emotional_stability'] = 'high'
                     analysis['score'] += 1.0
+                    analysis['emotion_specific_feedback'].append(
+                        "🎭 Great emotional consistency! Your voice maintains steady, professional energy throughout"
+                    )
                 elif variance > 0.3:
                     analysis['emotional_stability'] = 'low'
                     analysis['score'] -= 1.0
+                    analysis['emotion_specific_feedback'].append(
+                        "📈 Your emotions fluctuate significantly. Practice maintaining consistent energy and tone"
+                    )
+            
+            # Generate specific improvement recommendations
+            if top_negative:
+                highest_negative = top_negative[0]
+                negative_name = highest_negative.get('emotion', '').lower()
+                negative_score = highest_negative.get('score', 0)
+                
+                if negative_name in ['frustration', 'annoyance']:
+                    analysis['emotion_specific_feedback'].append(
+                        "😊 Work on sounding more patient and positive, even when discussing challenges"
+                    )
+                elif negative_name in ['fear', 'anxiety', 'nervousness']:
+                    analysis['emotion_specific_feedback'].append(
+                        "🫁 Practice breathing exercises: inhale for 4 counts, hold for 4, exhale for 6"
+                    )
+                elif negative_name in ['uncertainty', 'doubt']:
+                    analysis['emotion_specific_feedback'].append(
+                        "💪 Speak with more conviction. Use strong, declarative statements"
+                    )
+            
+            # Overall emotion summary
+            if len(analysis['positive_emotion_highlights']) > len(analysis['negative_emotion_concerns']):
+                analysis['emotion_specific_feedback'].append(
+                    "🎉 Overall, your emotional expression is positive and engaging!"
+                )
+            elif len(analysis['negative_emotion_concerns']) > len(analysis['positive_emotion_highlights']):
+                analysis['emotion_specific_feedback'].append(
+                    "🎯 Focus on cultivating more positive emotions like enthusiasm and confidence"
+                )
+            else:
+                analysis['emotion_specific_feedback'].append(
+                    "⚖️ Your emotional balance is good, with room to enhance positive expressions"
+                )
             
             analysis['score'] = max(0, min(10, analysis['score']))
             
@@ -346,11 +469,60 @@ class CoachingAgent:
     
     def _generate_emotion_coaching(self, emotion_analysis: Dict[str, Any]) -> Optional[str]:
         """Generate emotion-specific coaching advice"""
-        if emotion_analysis['confidence_level'] == 'low':
-            return "Take deep breaths before answering. Remember: you're prepared and capable. Practice power poses to boost confidence."
-        elif emotion_analysis['confidence_level'] == 'high':
-            return "Great confidence! Your enthusiasm shows through. Keep this positive energy while maintaining professionalism."
-        return None
+        
+        # Build comprehensive emotion coaching feedback
+        coaching_parts = []
+        
+        # Primary emotion feedback
+        primary_emotion = emotion_analysis.get('primary_emotion', 'neutral')
+        confidence_level = emotion_analysis.get('confidence_level', 'medium')
+        
+        if confidence_level == 'low':
+            coaching_parts.append("😌 Take deep breaths before answering. Remember: you're prepared and capable. Practice power poses to boost confidence.")
+        elif confidence_level == 'high':
+            coaching_parts.append("🎯 Great confidence! Your enthusiasm shows through. Keep this positive energy while maintaining professionalism.")
+        else:
+            coaching_parts.append("🎯 Good emotional balance. Consider adding more enthusiasm and energy to your delivery.")
+        
+        # Add specific emotion feedback
+        if emotion_analysis.get('positive_emotion_highlights'):
+            positive_feedback = "🌟 **Positive Emotions Detected:** "
+            positive_items = []
+            for highlight in emotion_analysis['positive_emotion_highlights'][:2]:  # Top 2
+                positive_items.append(highlight)
+            positive_feedback += " | ".join(positive_items)
+            coaching_parts.append(positive_feedback)
+        
+        if emotion_analysis.get('negative_emotion_concerns'):
+            negative_feedback = "⚠️ **Areas for Improvement:** "
+            negative_items = []
+            for concern in emotion_analysis['negative_emotion_concerns'][:2]:  # Top 2
+                negative_items.append(concern)
+            negative_feedback += " | ".join(negative_items)
+            coaching_parts.append(negative_feedback)
+        
+        # Add specific improvement recommendations
+        if emotion_analysis.get('emotion_specific_feedback'):
+            specific_feedback = "💡 **Specific Coaching:** "
+            specific_items = []
+            for feedback_item in emotion_analysis['emotion_specific_feedback'][:3]:  # Top 3
+                specific_items.append(feedback_item)
+            specific_feedback += " | ".join(specific_items)
+            coaching_parts.append(specific_feedback)
+        
+        # Combine all feedback
+        if coaching_parts:
+            return " ".join(coaching_parts)
+        
+        # Fallback feedback
+        if primary_emotion in ['fear', 'anxiety', 'nervousness']:
+            return "😌 Your voice shows nervousness. Practice deep breathing and power poses before interviews. Remember: you're prepared and capable!"
+        elif primary_emotion in ['frustration', 'annoyance']:
+            return "😊 Work on sounding more patient and positive, even when discussing challenges. Focus on positive framing."
+        elif primary_emotion in ['confidence', 'enthusiasm', 'joy']:
+            return "🎯 Excellent energy! Your confidence and enthusiasm will impress interviewers. Keep this positive energy!"
+        else:
+            return "Practice speaking with confidence and clarity. Consider adding more vocal variety and energy to your delivery."
     
     def _generate_next_steps(self, overall_score: float) -> List[str]:
         """Generate next steps based on performance"""
@@ -417,64 +589,27 @@ class CoachingAgent:
     ) -> str:
         """Create a comprehensive prompt for the LLM"""
         
-        prompt = f"""
-You are an expert interview coach specializing in technical interviews. Analyze the following interview response and provide comprehensive, professional coaching feedback.
+        # Create a much shorter, focused prompt to avoid Ollama 500 errors
+        prompt = f"""You are an expert interview coach. Analyze this interview response and provide concise feedback.
 
-INTERVIEW QUESTION:
-{context.question_text}
-Category: {context.question_category}
+Question: {context.question_text[:200]}
+Answer: {context.user_answer[:300]}
 
-USER'S ANSWER:
-{context.user_answer}
+Scores: Content {content_analysis['score']}/10, Emotion {emotion_analysis['score']}/10, Delivery {delivery_analysis['score']}/10
 
-ANALYSIS RESULTS:
-Content Score: {content_analysis['score']}/10
-- Strengths: {', '.join(content_analysis['strengths'])}
-- Areas for Improvement: {', '.join(content_analysis['weaknesses'])}
+Emotions: {emotion_analysis['primary_emotion']} (confidence: {emotion_analysis['confidence_level']})
 
-Emotion Analysis: {emotion_analysis['score']}/10
-- Top Positive Emotions: {', '.join([f"{e.get('emotion', 'Unknown')} ({e.get('score', 0):.2f})" for e in emotion_analysis['top_positive_emotions']])}
-- Top Negative Emotions: {', '.join([f"{e.get('emotion', 'Unknown')} ({e.get('score', 0):.2f})" for e in emotion_analysis['top_negative_emotions']]) if emotion_analysis['top_negative_emotions'] else 'None detected'}
-- Confidence Level: {emotion_analysis['confidence_level']}
-- Emotional Stability: {emotion_analysis['emotional_stability']}
+Provide:
+1. One key strength
+2. One improvement area
+3. One specific action step
+4. Brief emotion coaching
 
-Delivery Score: {delivery_analysis['score']}/10
-- Pacing: {delivery_analysis['pacing']}
-- Clarity: {delivery_analysis['clarity']}
-- Engagement: {delivery_analysis['engagement']}
-
-Please provide professional coaching feedback in the following structure:
-
-EXECUTIVE SUMMARY (2-3 sentences)
-- Overall performance assessment
-- Key areas of strength and concern
-
-STRENGTHS ANALYSIS
-- Highlight 2-3 specific positive aspects
-- Connect strengths to interview success factors
-
-IMPROVEMENT PRIORITIES
-- Focus on the 2-3 most impactful areas
-- Provide specific, actionable recommendations
-
-EMOTIONAL INTELLIGENCE INSIGHTS
-- Analyze the top positive emotions and how to leverage them
-- Address any negative emotions with specific coping strategies
-- Provide confidence-building techniques
-
-TECHNICAL DELIVERY FEEDBACK
-- STAR method guidance if applicable
-- Communication and presentation tips
-- Pacing and clarity recommendations
-
-DEVELOPMENT ROADMAP
-- Immediate next steps (next 24-48 hours)
-- Short-term goals (next week)
-- Long-term development areas
-
-Format your response in a professional, executive coaching style. Be specific, actionable, and encouraging while maintaining a business-appropriate tone.
-"""
+Keep response under 300 words."""
+        
         return prompt
+    
+
     
     def _integrate_ai_feedback(
         self,

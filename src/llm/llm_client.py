@@ -80,7 +80,16 @@ class LLMClient:
     def _call_ollama(self, prompt: str) -> Dict[str, Any]:
         """Call Ollama API"""
         try:
+            # First, check if the model is available
+            self._validate_ollama_model()
+            
             url = f"{self.base_url}/api/generate"
+            
+            # Truncate prompt if it's too long (Ollama has limits)
+            max_prompt_length = 4000  # Conservative limit
+            if len(prompt) > max_prompt_length:
+                logger.warning(f"Prompt too long ({len(prompt)} chars), truncating to {max_prompt_length}")
+                prompt = prompt[:max_prompt_length] + "\n\n[Content truncated due to length]"
             
             payload = {
                 "model": self.model_name,
@@ -88,9 +97,67 @@ class LLMClient:
                 "stream": False,
                 "options": {
                     "temperature": self.temperature,
-                    "num_predict": self.max_tokens
+                    "num_predict": min(self.max_tokens, 1000)  # Conservative token limit
                 }
             }
+            
+            logger.debug(f"Calling Ollama with model: {self.model_name}, prompt length: {len(prompt)}")
+            
+            response = requests.post(
+                url,
+                json=payload,
+                timeout=self.timeout
+            )
+            
+            if response.status_code == 500:
+                # Try to get more detailed error information
+                try:
+                    error_detail = response.json()
+                    logger.error(f"Ollama 500 error details: {error_detail}")
+                    
+                    # Check if it's a CUDA memory error
+                    if 'CUDA' in str(error_detail) and 'buffer' in str(error_detail):
+                        logger.info("CUDA memory error detected, trying CPU fallback...")
+                        return self._call_ollama_cpu_fallback(prompt)
+                        
+                except:
+                    logger.error("Ollama 500 error - no additional details available")
+                
+                # Try with a simpler prompt as fallback
+                return self._call_ollama_fallback(prompt)
+            
+            response.raise_for_status()
+            
+            result = response.json()
+            return {
+                'content': result.get('response', ''),
+                'tokens_used': result.get('eval_count', 0)
+            }
+            
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Ollama API error: {e}")
+            raise Exception(f"Failed to call Ollama: {e}")
+    
+    def _call_ollama_cpu_fallback(self, prompt: str) -> Dict[str, Any]:
+        """Fallback Ollama call using CPU instead of GPU"""
+        try:
+            # Create a much simpler prompt
+            simplified_prompt = self._simplify_prompt(prompt)
+            
+            url = f"{self.base_url}/api/generate"
+            
+            payload = {
+                "model": self.model_name,
+                "prompt": simplified_prompt,
+                "stream": False,
+                "options": {
+                    "temperature": 0.5,  # Lower temperature for more stable output
+                    "num_predict": 500,   # Shorter response
+                    "num_gpu": 0          # Force CPU usage
+                }
+            }
+            
+            logger.info("Attempting Ollama call with CPU fallback")
             
             response = requests.post(
                 url,
@@ -105,9 +172,69 @@ class LLMClient:
                 'tokens_used': result.get('eval_count', 0)
             }
             
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Ollama API error: {e}")
-            raise Exception(f"Failed to call Ollama: {e}")
+        except Exception as e:
+            logger.error(f"Ollama CPU fallback also failed: {e}")
+            # Return a basic response
+            return {
+                'content': "I apologize, but I'm having technical difficulties generating detailed coaching feedback. Please try again or check your Ollama setup.",
+                'tokens_used': 0
+            }
+    
+    def _call_ollama_fallback(self, prompt: str) -> Dict[str, Any]:
+        """Fallback Ollama call with simplified prompt"""
+        try:
+            # Create a much simpler prompt
+            simplified_prompt = self._simplify_prompt(prompt)
+            
+            url = f"{self.base_url}/api/generate"
+            
+            payload = {
+                "model": self.model_name,
+                "prompt": simplified_prompt,
+                "stream": False,
+                "options": {
+                    "temperature": 0.5,  # Lower temperature for more stable output
+                    "num_predict": 500    # Shorter response
+                }
+            }
+            
+            logger.info("Attempting Ollama call with simplified prompt")
+            
+            response = requests.post(
+                url,
+                json=payload,
+                timeout=self.timeout
+            )
+            response.raise_for_status()
+            
+            result = response.json()
+            return {
+                'content': result.get('response', ''),
+                'tokens_used': result.get('eval_count', 0)
+            }
+            
+        except Exception as e:
+            logger.error(f"Ollama fallback also failed: {e}")
+            # Return a basic response
+            return {
+                'content': "I apologize, but I'm having technical difficulties generating detailed coaching feedback. Please try again or check your Ollama setup.",
+                'tokens_used': 0
+            }
+    
+    def _simplify_prompt(self, prompt: str) -> str:
+        """Simplify the prompt to avoid Ollama issues"""
+        return f"""
+You are an expert interview coach. Provide brief, actionable feedback on this interview response.
+
+Question: {prompt[:500] if len(prompt) > 500 else prompt}
+
+Please provide:
+1. One key strength
+2. One area for improvement  
+3. One specific action step
+
+Keep your response under 200 words.
+"""
     
     def _call_openai(self, prompt: str) -> Dict[str, Any]:
         """Call OpenAI API"""
@@ -191,6 +318,94 @@ class LLMClient:
             logger.error(f"Anthropic API error: {e}")
             raise Exception(f"Failed to call Anthropic: {e}")
     
+    def _validate_ollama_model(self) -> None:
+        """Validate that the configured Ollama model is available"""
+        try:
+            response = requests.get(f"{self.base_url}/api/tags", timeout=10)
+            if response.status_code != 200:
+                raise Exception(f"Ollama API not accessible: {response.status_code}")
+            
+            models_data = response.json()
+            available_models = [model['name'] for model in models_data.get('models', [])]
+            
+            logger.info(f"Available Ollama models: {available_models}")
+            
+            # Check for exact match
+            if self.model_name in available_models:
+                logger.info(f"Model {self.model_name} found")
+                return
+            
+            # Check for models with tags (e.g., mistral:latest)
+            for model in available_models:
+                if model.startswith(self.model_name.split(':')[0]):
+                    logger.info(f"Found similar model: {model}, using it instead")
+                    self.model_name = model
+                    return
+            
+            # Try fallback models
+            fallback_models = ['llama2:7b', 'llama2:latest', 'mistral:latest', 'codellama:7b']
+            for fallback in fallback_models:
+                if fallback in available_models:
+                    logger.info(f"Using fallback model: {fallback}")
+                    self.model_name = fallback
+                    return
+            
+            # If no fallbacks work, use the first available model
+            if available_models:
+                logger.warning(f"Configured model {self.model_name} not found, using {available_models[0]}")
+                self.model_name = available_models[0]
+                return
+            
+            raise Exception("No Ollama models available")
+            
+        except Exception as e:
+            logger.error(f"Model validation failed: {e}")
+            raise Exception(f"Ollama model validation failed: {e}")
+
+    def _validate_ollama_model(self) -> None:
+        """Validate that the configured Ollama model is available"""
+        try:
+            response = requests.get(f"{self.base_url}/api/tags", timeout=10)
+            if response.status_code != 200:
+                raise Exception(f"Ollama API not accessible: {response.status_code}")
+            
+            models_data = response.json()
+            available_models = [model['name'] for model in models_data.get('models', [])]
+            
+            logger.info(f"Available Ollama models: {available_models}")
+            
+            # Check for exact match
+            if self.model_name in available_models:
+                logger.info(f"Model {self.model_name} found")
+                return
+            
+            # Check for models with tags (e.g., mistral:latest)
+            for model in available_models:
+                if model.startswith(self.model_name.split(':')[0]):
+                    logger.info(f"Found similar model: {model}, using it instead")
+                    self.model_name = model
+                    return
+            
+            # Try fallback models
+            fallback_models = ['llama2:7b', 'llama2:latest', 'mistral:latest', 'codellama:7b']
+            for fallback in fallback_models:
+                if fallback in available_models:
+                    logger.info(f"Using fallback model: {fallback}")
+                    self.model_name = fallback
+                    return
+            
+            # If no fallbacks work, use the first available model
+            if available_models:
+                logger.warning(f"Configured model {self.model_name} not found, using {available_models[0]}")
+                self.model_name = available_models[0]
+                return
+            
+            raise Exception("No Ollama models available")
+            
+        except Exception as e:
+            logger.error(f"Model validation failed: {e}")
+            raise Exception(f"Ollama model validation failed: {e}")
+
     def test_connection(self) -> bool:
         """Test if the LLM provider is accessible"""
         try:
